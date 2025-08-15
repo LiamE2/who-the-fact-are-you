@@ -8,16 +8,15 @@
 <!-- Font Awesome (kept for mapping, emoji fallback used for colourful emoji) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
       crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-<!-- Confetti lib -->
+<!-- Confetti -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
 <style>
   /* ---------------------------
-     Design tokens
+     Design tokens + root font-size (A+/A- modifies --ui-font-size)
      --------------------------- */
   :root{
-    --ui-font-size: 16px;
+    --ui-font-size: 16px;      /* changed by the A+/A- buttons */
     --brand-red: #e53935;
     --bg: #ffffff;
     --text: #111111;
@@ -25,13 +24,15 @@
     --tile: #fafafa;
     --tile-border: #ececec;
     --accent: #ef4444;
-    --bingo-green: #22c55e; /* used for completed tile styling */
+    --bingo-green: #22c55e;
   }
   body.dark{
     --bg:#0b0e16; --text:#ffffff; --muted:#9ca3af; --tile:#0b1220; --tile-border:#16202a; --accent:#f87171;
   }
 
   *{ box-sizing: border-box; }
+
+  /* IMPORTANT: use the root variable as the page font-size so rems scale with A+/A- */
   html { font-size: var(--ui-font-size); }
   body{
     margin:0;
@@ -51,7 +52,7 @@
   .logo{ width:3.5rem; height:3.5rem; object-fit:contain; border-radius:0.5rem; background:#fff; flex:0 0 auto; }
   .brand{ display:flex; flex-direction:column; align-items:flex-start; flex:1 1 auto; min-width:0; }
   .brand .subtitle{ font-size:0.75rem; color:var(--muted); text-transform:uppercase; margin:0 0 0.125rem 0; }
-  /* Keep title on one line where possible (prevents it being shoved right on mobile) */
+  /* Title uses nowrap and ellipsis to avoid awkward wrapping on small devices */
   .brand .title{ font-weight:800; font-size:clamp(18px, 4.5vw, 28px); margin:0; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   /* Controls */
@@ -65,60 +66,52 @@
   .board-container{ padding:0.5rem 1rem 1rem; flex:1; }
   .board{ display:grid; grid-template-columns: repeat(4, 1fr); gap:0.75rem; align-items:stretch; }
 
-  /* Tile */
+  /* Tile styling
+     NOTE: tile text sizes use rem units so they scale when --ui-font-size changes */
   .tile{
     background:var(--tile); border:1px solid var(--tile-border); border-radius:0.875rem;
     display:flex; flex-direction:column; position:relative; padding:0.75rem 0.75rem 3.0rem 0.75rem; overflow:hidden;
     min-height:6.5rem; color:var(--text); text-align:left;
     transition: box-shadow .12s ease, transform .08s ease, background .12s ease, outline-color .12s ease;
   }
-  .tile:active { transform: translateY(1px); } /* small press feedback */
+  .tile:active { transform: translateY(1px); }
 
-  .fact{ font-size:clamp(12px, 2.4vw, 15px); line-height:1.25; font-weight:600; margin-bottom:0.5rem; color:var(--text); word-break:break-word; }
-  .meta{ margin-top:auto; font-size:0.8125rem; color:var(--muted); display:flex; gap:0.5rem; align-items:center; }
-  .entry{ margin-top:0.5rem; font-size:0.8125rem; color:var(--text); }
+  /* Use rem units (not vw/clamp) so A+/A- affects these */
+  .fact{ font-size: 0.95rem; line-height:1.25; font-weight:600; margin-bottom:0.5rem; color:var(--text); word-break:break-word; }
+  .meta{ margin-top:auto; font-size: 0.825rem; color:var(--muted); display:flex; gap:0.5rem; align-items:center; }
+  .entry{ margin-top:0.5rem; font-size: 0.875rem; color:var(--text); }
 
-  /* Name should fully show (no ellipsis); allow wrapping */
-  .who{ font-weight:700; word-break:break-word; white-space:normal; max-width:100%; }
+  /* NAME: allow wrapping and fully visible (fix mobile truncation) */
+  .who{ font-weight:700; word-break:break-word; white-space:normal; max-width:100%; font-size:0.95rem; }
 
-  .resp{ margin-top:0.25rem; opacity:0.95; font-size:0.8125rem; }
+  /* RESPONSE */
+  .resp{ margin-top:0.25rem; opacity:0.95; font-size:0.875rem; }
 
-  /* ICONS: we prefer colourful emoji fallback (shown by default). FA is present in DOM but hidden by default. */
+  /* ICONS: emoji fallback used for colourful emoji on mobile */
   .fa-icon{ position:absolute; right:0.625rem; bottom:0.625rem; opacity:.22; font-size:1.6rem; display:none; pointer-events:none; }
   .emoji-fallback{ position:absolute; right:0.625rem; bottom:0.625rem; opacity:.22; font-size:1.6rem; display:inline-block; pointer-events:none; }
 
-  /* ---------------------------
-     COMPLETED TILE STYLING (RESTORED)
-     - green outline around the tile
-     - subtle green gradient shading
-     - small green dot in meta area to indicate it's filled
-     - slightly stronger icon visibility
-     --------------------------- */
+  /* Completed tile styling (green outline + gradient + dot) */
   .tile.filled {
-    outline: 3px solid var(--bingo-green); /* green border */
+    outline: 3px solid var(--bingo-green);
     box-shadow: 0 8px 26px rgba(34,197,94,0.07);
     background: linear-gradient(180deg, rgba(34,197,94,0.06), var(--tile));
   }
-  /* Small green dot as a visual check in the meta area (non-intrusive) */
   .tile.filled .meta::before{
     content: '';
-    width: 10px;
-    height: 10px;
-    background: var(--bingo-green);
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 6px;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+    width: 10px; height: 10px; background: var(--bingo-green); border-radius: 50%; display:inline-block; margin-right:6px; box-shadow:0 1px 0 rgba(0,0,0,0.06);
   }
-  /* Make emoji more visible when filled; keep them colourful (no grey overlay) */
   .tile.filled .emoji-fallback { opacity: 1; }
 
-  /* Modal: darker prompt + dark-mode aware */
+  /* Modal styling */
   dialog.modal{ border:none; border-radius:0.75rem; padding:0; width:min(40rem,94vw); background:var(--tile); color:var(--text); }
   dialog.modal::backdrop{ background: rgba(0,0,0,0.35); }
   .modal .inner{ padding:0.875rem; }
   .modal .hint{ color:var(--text); font-weight:800; margin-bottom:0.5rem; }
-  .modal input, .modal textarea{ width:100%; font-size:1rem; padding:0.5rem 0.75rem; border-radius:0.625rem; border:1px solid var(--tile-border); background:var(--bg); color:var(--text); }
+  /* IMPORTANT: force input/textarea to 16px so iOS won't zoom in on focus.
+     We still use rems for tile text; inputs are kept at 16px minimum for usability.
+  */
+  .modal input, .modal textarea{ width:100%; padding:0.5rem 0.75rem; border-radius:0.625rem; border:1px solid var(--tile-border); background:var(--bg); color:var(--text); font-size:16px; }
   .modal .actions{ display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.5rem; }
   .modal .btn{ color:var(--text); background:transparent; border:1px solid var(--tile-border); padding:0.5rem 0.75rem; border-radius:0.5rem; }
   .modal .btn.primary{ background:var(--accent); color:#fff; border:none; }
@@ -130,19 +123,21 @@
 
   footer{ padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center; font-size:0.8125rem; color:var(--muted); }
 
-  /* Mobile adjustments */
+  /* Mobile tweaks */
   @media (max-width:760px){
     header{ padding:0.5rem 0.75rem; }
     .brand{ margin-left:0.5rem; flex:1; display:flex; flex-direction:column; align-items:center; }
     .brand .title { font-size: clamp(16px, 6vw, 20px); white-space:nowrap; }
     .tile{ padding:0.625rem 0.625rem 2.5rem 0.625rem; min-height:5.75rem; }
     .bingo-text{ font-size:3rem; }
+
+    /* Keep inputs readable on small screens too; keep them 16px to avoid zoom */
+    .modal input, .modal textarea{ font-size:16px; }
   }
 </style>
 </head>
 <body>
   <div class="app-wrapper" id="app">
-    <!-- Simplified header (language & dark moved into controls) -->
     <header>
       <img class="logo" src="https://tse2.mm.bing.net/th/id/OIP.vB2_MMCK6wxXLJRR_2APTgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Engage Squared logo"
            onerror="this.src='https://via.placeholder.com/120x40?text=Engage+Squared'"/>
@@ -153,7 +148,6 @@
       <div style="width:3.5rem; flex:0 0 auto;"></div>
     </header>
 
-    <!-- CONTROLS (language & dark here to avoid header overflow) -->
     <div class="controls" role="region" aria-label="controls">
       <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
         <select id="langSel" aria-label="Language" class="btn">
@@ -168,7 +162,6 @@
         <button id="randomBtn" class="btn">🔀 <span data-i18n="randomize">Randomise board</span> (<span id="rndLeft">3</span>)</button>
         <button id="startBtn" class="btn primary">▶ <span data-i18n="start">Start Bingo</span></button>
 
-        <!-- Font size A− / A+ -->
         <div class="font-controls" style="margin-left:0.5rem;">
           <button id="fontDec" class="btn" title="Decrease font">A−</button>
           <button id="fontInc" class="btn" title="Increase font">A+</button>
@@ -197,11 +190,11 @@
       <div id="modalFact" class="hint" style="margin-bottom:8px;"></div>
 
       <label id="nameLabel" for="nameInput">Name</label>
-      <!-- keep input font-size 1rem to avoid iOS zoom -->
-      <input id="nameInput" type="text" placeholder="Type their name" required style="margin-bottom:8px; font-size:1rem;" />
+      <!-- input forced to 16px to avoid iOS zoom -->
+      <input id="nameInput" type="text" placeholder="Type their name" required style="margin-bottom:8px; font-size:16px;" />
 
       <label id="respLabel" for="respInput">Response</label>
-      <textarea id="respInput" placeholder="A few words…" required style="font-size:1rem;"></textarea>
+      <textarea id="respInput" placeholder="A few words…" required style="font-size:16px;"></textarea>
 
       <div class="actions" style="margin-top:8px;">
         <button id="cancelBtn" class="btn" value="cancel">Cancel</button>
@@ -217,11 +210,9 @@
   <audio id="clapAudio" preload="auto" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_b4a41e8d27.mp3?filename=small-crowd-clapping-6695.mp3"></audio>
 
 <script>
-/* ===================================
-   Full game JS (4×4) with inline comments
-   =================================== */
+/* Full game JS (4x4) with the A+/A- root font-size control and iOS zoom fix applied */
 
-/* I18N data (English / Japanese / Bahasa) */
+/* i18n (EN/JA/ID) */
 const I18N = {
   en: {
     ui: {
@@ -378,7 +369,7 @@ const I18N = {
   }
 };
 
-/* Icons */
+/* ICONS mapping */
 const ICONS = [
   { fa:'fa-briefcase', emoji:'🏢' }, { fa:'fa-masks-theater', emoji:'🎤' }, { fa:'fa-earth-americas', emoji:'🌍' },
   { fa:'fa-language', emoji:'🗣️' }, { fa:'fa-star', emoji:'⭐' }, { fa:'fa-person-running', emoji:'🏃' },
@@ -428,13 +419,13 @@ let state = {
   bingoScale: 1
 };
 
-/* Persistence helpers (Set -> Array and back) */
+/* Persistence helpers */
 function toSavableState(s){ const copy = {...s}; copy.completedLines = Array.from(s.completedLines || []); return copy; }
 function fromSavedState(s){ if (!s) return null; const revived = {...s}; revived.completedLines = new Set(Array.isArray(s.completedLines) ? s.completedLines : []); return revived; }
 function saveState(){ try{ localStorage.setItem('wtaf-state', JSON.stringify(toSavableState(state))); localStorage.setItem('wtaf-lang', state.lang); }catch(e){console.warn('save failed', e);} }
 function loadState(){ try{ const s = JSON.parse(localStorage.getItem('wtaf-state')); const revived = fromSavedState(s); if (revived && Array.isArray(revived.grid) && revived.grid.length===16) { state = {...state, ...revived}; } }catch(e){} }
 
-/* Apply language UI */
+/* Apply language */
 function applyLang(){
   langSel.value = state.lang;
   const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
@@ -449,7 +440,7 @@ function applyLang(){
 function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function safeEscape(str){ if (str===null||str===undefined) return ''; return String(str).replace(/[&<>\"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[s])); }
 
-/* Create new grid (16 unique from 40) */
+/* New grid */
 function randomiseGrid(){
   const total = I18N.en.facts.length;
   const indices = [...Array(total).keys()];
@@ -467,7 +458,7 @@ function tileTextByIndex(idx){
 }
 function tileIconByIndex(idx){ const factIdx = state.grid[idx]; return ICONS[factIdx] || { fa:'fa-circle-question', emoji:'❓' }; }
 
-/* Render board — emoji fallback always used for colourful emojis on mobile */
+/* Render board (emoji fallback ensures colourful emoji on mobile) */
 function renderBoard(){
   if (!Array.isArray(state.grid) || state.grid.length !== 16){ randomiseGrid(); return; }
   boardEl.innerHTML = '';
@@ -479,11 +470,8 @@ function renderBoard(){
     tile.type = 'button';
     tile.className = 'tile';
     tile.dataset.index = i;
-
-    // Keep FA element hidden by default; rely on emoji fallback to show colour on mobile
     const faHtml = `<i class="fa-solid ${icon.fa} fa-icon" aria-hidden="true" style="display:none"></i>`;
     const emojiHtml = `<span class="emoji-fallback" aria-hidden="true">${icon.emoji}</span>`;
-
     tile.innerHTML = `
       ${faHtml}
       ${emojiHtml}
@@ -491,13 +479,13 @@ function renderBoard(){
       <div class="meta"><span class="who">${ entry ? safeEscape(entry.name) : '' }</span></div>
       ${ entry ? `<div class="entry"><div class="resp">${safeEscape(entry.resp)}</div></div>` : '' }
     `;
-    if (entry) tile.classList.add('filled'); // restored logic: filled tiles get .filled class (CSS above)
+    if (entry) tile.classList.add('filled');
     tile.addEventListener('click', ()=> onTileClick(i, fact));
     boardEl.appendChild(tile);
   }
 }
 
-/* Modal interactions */
+/* Modal & input behavior */
 let currentIdx = null;
 function onTileClick(idx, fact){
   if (!state.started) return;
@@ -509,16 +497,13 @@ function onTileClick(idx, fact){
   setTimeout(()=> nameInput.focus(), 50);
 }
 
-/* Limit response to 10 words on save */
+/* Response word limiting to 10 words on save */
 function limitWords(str, maxWords){
   const words = str.trim().split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return { text: words.join(' '), truncated: false };
   return { text: words.slice(0, maxWords).join(' ') + '…', truncated: true };
 }
-respInput.addEventListener('input', ()=>{
-  const words = respInput.value.split(/\s+/).filter(Boolean);
-  if (words.length > 40) respInput.value = words.slice(0,40).join(' ');
-});
+respInput.addEventListener('input', ()=>{ const words = respInput.value.split(/\s+/).filter(Boolean); if (words.length > 40) respInput.value = words.slice(0,40).join(' '); });
 
 saveBtn.addEventListener('click', (e)=>{
   e.preventDefault();
@@ -535,7 +520,7 @@ saveBtn.addEventListener('click', (e)=>{
 });
 cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); } });
 
-/* Bingo logic for 4x4 */
+/* Bingo logic (4x4) */
 function calculateBingoLines(){
   const filled = new Set(Object.keys(state.answers).map(Number));
   const lines = [];
@@ -578,10 +563,11 @@ function showBingo(){
 }
 bingoOverlay.addEventListener('click', ()=> bingoOverlay.classList.remove('show'));
 
-/* Crowd clap: use audio element first, fallback to WebAudio */
+/* Crowd clap sound */
 let audioCtx = null, unlocked = false;
 function resumeAudio(){ if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); unlocked = true; }
 window.addEventListener('pointerdown', resumeAudio, { once:true });
+
 function playClapSound(){
   if (clapAudio && typeof clapAudio.play === 'function'){
     try { clapAudio.volume = 0.28; clapAudio.currentTime = 0; clapAudio.play().catch(()=>{}); } catch(e){}
@@ -601,7 +587,7 @@ function playClapSound(){
   }
 }
 
-/* FA detection (kept but we intentionally prefer emoji fallback) */
+/* Font Awesome detect (kept but we rely on emoji fallback) */
 function detectFontAwesome(){
   try{ if (document.fonts && document.fonts.check("1em 'Font Awesome 6 Free'")) document.body.classList.add('fa-loaded'); else document.body.classList.remove('fa-loaded'); } catch(e){ document.body.classList.remove('fa-loaded'); }
 }
@@ -632,7 +618,7 @@ startBtn.addEventListener('click', ()=>{
   }
 });
 
-/* Dark toggle (label changes to "Light mode" in dark) */
+/* Dark toggle + label update */
 function updateDarkToggleLabel(){
   const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
   if (document.body.classList.contains('dark')) darkToggle.textContent = `☀ ${ui.light || 'Light mode'}`;
@@ -648,23 +634,24 @@ darkToggle.addEventListener('click', ()=>{
 /* Language change */
 langSel.addEventListener('change', ()=>{ state.lang = langSel.value; applyLang(); });
 
-/* Font size A+/A- */
+/* Font size A+/A-: modify the CSS root var --ui-font-size (rem scaling)
+   Also persist it so A+/A- survives reload. */
 const FONT_MIN = 12, FONT_MAX = 22;
 function getSavedFontSize(){ const v = parseInt(localStorage.getItem('wtaf-fontsize') || '', 10); return Number.isFinite(v) ? v : 16; }
 function setFontSize(px){ const clamped = Math.max(FONT_MIN, Math.min(FONT_MAX, Math.round(px))); document.documentElement.style.setProperty('--ui-font-size', clamped + 'px'); localStorage.setItem('wtaf-fontsize', String(clamped)); }
-document.getElementById('fontInc').addEventListener('click', ()=>{ const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size')||'16',10); setFontSize(cur+1); });
-document.getElementById('fontDec').addEventListener('click', ()=>{ const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size')||'16',10); setFontSize(cur-1); });
+document.getElementById('fontInc').addEventListener('click', ()=>{ const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size')||'16',10); setFontSize(cur+1); renderBoard(); });
+document.getElementById('fontDec').addEventListener('click', ()=>{ const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size')||'16',10); setFontSize(cur-1); renderBoard(); });
 
 /* Boot */
 loadState();
 document.body.classList.toggle('dark', localStorage.getItem('wtaf-dark') === '1');
 rndLeftEl.textContent = state.randomLeft;
-setFontSize(getSavedFontSize());
+setFontSize(getSavedFontSize());     // set initial UI font-size from saved value
 applyLang();
 if (state.started){ startBtn.classList.remove('primary'); startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`; randomBtn.disabled = true; }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(detectFontAwesome); else setTimeout(detectFontAwesome, 400);
 
-/* self-tests in console */
+/* Self-tests */
 (function runSelfTests(){
   console.groupCollapsed('WTFAY self-tests');
   const tmp = { completedLines: new Set([1,2,7]) };
