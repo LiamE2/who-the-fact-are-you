@@ -6,86 +6,132 @@
   <title>Who the Fact Are You? – Engage Squared</title>
   <!-- Google font for a friendly look -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
-  <!-- Font Awesome for per-question icons (with emoji fallback) -->
+  <!-- Font Awesome for per-question icons (plus we provide emoji fallback) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <!-- Lightweight confetti library -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <style>
     /*
       Design tokens via CSS variables.
-      We flip these in dark mode. The red border matches the Engage Squared brand.
+      We flip these in dark mode by changing the body class.
     */
-    :root{
-      --brand-red: #c41230;
-      --bg: #ffffff; --text: #222; --muted: #667085;
-      --tile-bg: #fff; --tile-border: #d0d7de; --tile-complete: #e8f5e9;
+    :root {
+      --brand-red: #e53935; /* red pulled from/near logo */
+      --bg: #ffffff;
+      --text: #111111;
+      --muted: #6b7280;
+      --tile: #fafafa;
+      --tile-border: #ececec;
+      --accent: #ef4444;
     }
-    [data-theme="dark"]{
-      --bg: #0b0f14; --text: #f5f7fa; --muted: #9aa4b2;
-      --tile-bg: #121826; --tile-border: #223044; --tile-complete: #0f2b1c;
+    body.dark {
+      --bg: #0b0e16;
+      --text: #ffffff;
+      --muted: #d1d5db;
+      --tile: #111827;
+      --tile-border: #1f2937;
+      --accent: #f87171;
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { margin: 0; font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); }
+    body {
+      margin: 0;
+      font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--text);
+    }
 
-    .app { min-height: 100%; display: grid; grid-template-rows: auto auto 1fr auto; border: 10px solid var(--brand-red); }
+    /* Red border around the entire screen per request */
+    .app-wrapper {
+      min-height: 100dvh;
+      border: 10px solid var(--brand-red);
+      display: flex;
+      flex-direction: column;
+    }
 
-    header { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--tile-border); }
-    header .logo { width: 130px; height: auto; object-fit: contain; }
-    .brand .subtitle { font-weight: 800; letter-spacing: .2em; color: var(--muted); font-size: 12px; }
-    .brand .title { font-size: clamp(18px, 4.2vw, 28px); font-weight: 800; }
-    .tags { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-    .chip { border: 1px solid var(--tile-border); padding: 6px 10px; border-radius: 999px; font-size: 12px; background: var(--tile-bg); }
+    header {
+      padding: 16px 14px 8px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    header img.logo { width: 52px; height: 52px; border-radius: 10px; object-fit: contain; background: #fff; }
+    .brand { line-height: 1.1; }
+    .brand .title { font-weight: 800; font-size: clamp(22px, 6vw, 34px); }
+    .brand .subtitle { font-weight: 600; color: var(--muted); font-size: clamp(12px, 2.6vw, 14px); letter-spacing: 1px; text-transform: uppercase; }
 
-    .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px 14px; }
-    .controls .left, .controls .center, .controls .right { display: flex; gap: 8px; align-items: center; }
-    .controls .left { justify-content: flex-start; }
-    .controls .center { justify-content: center; }
-    .controls .right { justify-content: flex-end; }
+    .controls {
+      padding: 8px 14px 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+    .control-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    select, button, input[type="text"], textarea {
+      background: var(--tile);
+      color: var(--text);
+      border: 1px solid var(--tile-border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+      transition: transform .05s ease, filter .2s ease;
+    }
+    button:active { transform: translateY(1px); }
+    .primary { background: var(--accent); color: #fff; border: none; }
+    .ghost { background: transparent; }
+    .pill { border-radius: 999px; }
+    .hint { font-size: 12px; color: var(--muted); }
 
-    button, select { font: inherit; color: inherit; }
-    .btn { border: 1px solid var(--tile-border); background: var(--tile-bg); padding: 10px 12px; border-radius: 12px; cursor: pointer; }
-    .btn.primary { background: #111827; color: #fff; border-color: #111827; }
-    [data-theme="dark"] .btn.primary { background: #2563eb; border-color: #2563eb; }
-    .btn.ghost { background: transparent; }
-    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    /* BOARD: switched to 4×4 */
+    .board {
+      padding: 10px 14px 22px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      flex: 1;
+    }
+    .tile {
+      background: var(--tile);
+      border: 1px solid var(--tile-border);
+      border-radius: 18px;
+      /* Use aspect-ratio to force 1:1 squares on all screens */
+      aspect-ratio: 1 / 1;
+      /* keep a sensible minimum height for larger screens */
+      min-height: min(18vh, 142px);
+      display: flex;
+      flex-direction: column;
+      padding: 12px 12px 44px 12px; /* extra bottom padding so text doesn't overlap icon */
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+    }
+    .tile .fact { font-size: clamp(12px, 2.6vw, 15px); line-height: 1.25; font-weight: 600; padding-right: 6px; }
 
-    .hint { color: var(--muted); font-size: 12px; }
+    /* Icon handling: prefer FA when loaded; otherwise show emoji fallback */
+    /* Icons moved to bottom-right to avoid covering text */
+    .tile .fa-icon { position: absolute; right: 10px; bottom: 10px; opacity: .22; font-size: 28px; display: none; }
+    .tile .emoji-fallback { position: absolute; right: 10px; bottom: 10px; opacity: .22; font-size: 28px; display: inline-block; }
+    body.fa-loaded .tile .fa-icon { display: inline-block; }
+    body.fa-loaded .tile .emoji-fallback { display: none; }
 
-    /* Board grid – switched to 4 columns for 4×4 */
-    .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px 14px; }
-
-    /*
-      Tile styling
-      - Perfect 1:1 squares on any screen via aspect-ratio
-      - Extra bottom padding so text never collides with the bottom-right icon
-    */
-    .tile { position: relative; border: 1px solid var(--tile-border); border-radius: 14px; background: var(--tile-bg); text-align: left; padding: 12px 12px 48px 12px; /* reserve space for bottom-right icon */ aspect-ratio: 1 / 1; transition: outline .15s ease, transform .05s ease; }
-    .tile:active { transform: translateY(1px); }
-    .tile .fact { font-size: clamp(12px, 2.6vw, 15px); line-height: 1.35; font-weight: 600; padding-right: 44px; /* keep text clear of icon */ }
-
-    /* Name + check line under the fact */
-    .tile .meta { position: absolute; left: 12px; right: 12px; bottom: 34px; border-top: 1px dashed var(--tile-border); font-size: 12px; line-height: 1.25; padding-top: 6px; display: flex; gap: 6px; align-items: center; }
-    .tile .who { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* Response text block */
-    .tile .entry { position: absolute; left: 12px; right: 12px; bottom: 12px; font-size: 12px; line-height: 1.35; max-height: 3.2em; overflow: hidden; text-overflow: ellipsis; }
-    .tile .resp { opacity: .9; }
-
+    .tile .meta { margin-top: 8px; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .tile .entry { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--tile-border); font-size: 12px; line-height: 1.25; }
+    .tile .who { font-weight: 700; }
+    .tile .resp { margin-top: 2px; opacity: .9; }
     .tile.filled { outline: 3px solid #22c55e; background: linear-gradient(180deg, rgba(16,185,129,.15), transparent 50%); }
     .check { width: 18px; height: 18px; border-radius: 50%; background: #22c55e; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
-
-    /* Icons – now fixed to bottom-right, with emoji fallback if FA fails */
-    .tile .fa-icon { position: absolute; right: 10px; bottom: 10px; font-size: 28px; opacity: .22; display: none; pointer-events: none; }
-    body.fa-loaded .tile .fa-icon { display: block; }
-    .tile .emoji-fallback { position: absolute; right: 10px; bottom: 10px; font-size: 24px; opacity: .45; display: block; pointer-events: none; }
-    body.fa-loaded .tile .emoji-fallback { display: none; }
 
     .footer { padding: 8px 14px 16px; display: flex; align-items: center; justify-content: space-between; }
 
     /* Dialog (modal) styling */
-    dialog.modal { border: none; padding: 0; border-radius: 16px; max-width: min(560px, 92vw); background: var(--bg); color: var(--text); }
+    dialog.modal { border: none; padding: 0; border-radius: 16px; width: min(560px, 92vw); background: var(--bg); color: var(--text); }
     .modal .inner { padding: 16px; }
     .modal h3 { margin: 0 0 8px; }
     .row { display: grid; gap: 8px; margin: 10px 0; }
@@ -94,18 +140,17 @@
     /* Bingo overlay (for big BINGO! and tap-to-dismiss) */
     .bingo-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); z-index: 50; }
     .bingo-overlay.show { display: flex; }
-    .bingo { font-weight: 800; font-size: min(18vw, 140px); color: #fff; text-shadow: 0 6px 30px rgba(0,0,0,.6); user-select: none; }
+    .bingo-text { font-weight: 800; font-size: 64px; color: #fff; text-shadow: 0 6px 22px rgba(0,0,0,.55); }
 
-    @media (max-width: 560px){
-      header { grid-template-columns: 1fr auto; grid-template-areas: 'brand controls'; gap: 8px; }
-      header .logo { display: none; }
-      .controls { grid-template-columns: 1fr; }
-      .footer { flex-direction: column; gap: 6px; align-items: flex-start; }
-    }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag { font-size: 11px; padding: 4px 8px; background: #fee2e2; color: #991b1b; border-radius: 999px; }
+    body.dark .tag { background: #7f1d1d; color: #fee2e2; }
+
+    @media (min-width: 860px) { .controls { grid-template-columns: 1fr 1fr 1fr; } }
   </style>
 </head>
 <body>
-  <div class="app" id="app">
+  <div class="app-wrapper" id="app">
     <header>
       <!-- Logo from the online link you provided. If it ever fails to load due to hotlinking, download & host locally. -->
       <img class="logo" src="https://tse2.mm.bing.net/th/id/OIP.vB2_MMCK6wxXLJRR_2APTgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Engage Squared logo" crossorigin="anonymous" />
@@ -114,30 +159,28 @@
         <div class="title">Who the Fact Are You? 🎉</div>
       </div>
       <div class="tags">
-        <span class="chip">Crowd clap on BINGO</span>
-        <span class="chip">Randomise ×3</span>
-        <span class="chip">EN / 日本語 / Bahasa</span>
+        <span class="tag" id="darkTag">☾ Dark</span>
+        <span class="tag">4×4 Bingo</span>
       </div>
     </header>
 
     <section class="controls">
-      <div class="left">
-        <label class="hint" for="lang">Language:</label>
-        <select id="lang" class="btn">
+      <div class="control-row">
+        <label for="langSel" id="langLabel">Language:</label>
+        <select id="langSel" aria-label="Language">
           <option value="en">English</option>
           <option value="ja">日本語</option>
-          <option value="id">Bahasa</option>
+          <option value="id">Bahasa Indonesia</option>
         </select>
-        <label class="hint" for="darkToggle">Dark mode</label>
-        <input id="darkToggle" type="checkbox" />
+        <button id="darkToggle" class="ghost pill" aria-pressed="false">🌙 Dark mode</button>
       </div>
-      <div class="center">
-        <button id="randomBtn" class="btn">Randomise board</button>
-        <button id="startBtn" class="btn primary">Start Bingo</button>
-        <button id="resetBtn" class="btn" style="display:none">Reset Board</button>
-      </div>
-      <div class="right">
+      <div class="control-row">
+        <button id="randomBtn" class="pill">🔀 <span data-i18n="randomize">Randomise board</span> (<span id="rndLeft">3</span>)</button>
+        <button id="startBtn" class="primary pill">▶ <span data-i18n="start">Start Bingo</span></button>
         <div class="hint" id="preHint">You can shuffle up to 3× before starting.</div>
+      </div>
+      <div class="control-row">
+        <div class="hint" id="howto">Tap a tile to enter a name + a short response. Fill lines to get BINGO!</div>
       </div>
     </section>
 
@@ -150,30 +193,33 @@
   </div>
 
   <!-- Modal for entering Name + Response on a tile -->
-  <dialog class="modal" id="modal">
-    <div class="inner">
+  <dialog class="modal" id="entryModal">
+    <form method="dialog" class="inner">
       <h3 id="modalTitle">Add a name & response</h3>
+      <div id="modalFact" class="hint"></div>
       <div class="row">
-        <label for="nameInput" id="nameLabel">Name</label>
-        <input id="nameInput" type="text" placeholder="e.g. Alex" />
+        <label id="nameLabel" for="nameInput">Name</label>
+        <input id="nameInput" type="text" placeholder="Type their name" required />
       </div>
       <div class="row">
-        <label for="respInput" id="respLabel">Response</label>
-        <textarea id="respInput" placeholder="e.g. Met Chris Hemsworth" ></textarea>
+        <label id="respLabel" for="respInput">Response</label>
+        <textarea id="respInput" placeholder="A few words…" required></textarea>
       </div>
-      <div class="row" style="display:flex; gap: 8px; justify-content:flex-end;">
-        <button id="cancelBtn" class="btn">Cancel</button>
-        <button id="saveBtn" class="btn primary">Save</button>
+      <div class="control-row" style="justify-content: end;">
+        <button value="cancel" class="ghost" id="cancelBtn">Cancel</button>
+        <button value="confirm" class="primary" id="saveBtn">Save</button>
       </div>
-    </div>
+    </form>
   </dialog>
 
-  <!-- Overlay for big BINGO! text (tap to dismiss) -->
-  <div class="bingo-overlay" id="bingoOverlay"><div class="bingo">BINGO!</div></div>
+  <!-- Bingo Overlay (confetti + scalable BINGO!) -->
+  <div class="bingo-overlay" id="bingoOverlay">
+    <div class="bingo-text" id="bingoText">BINGO!</div>
+  </div>
 
   <script>
     // ============================
-    // Internationalisation strings
+    // Internationalisation (i18n)
     // ============================
     const I18N = {
       en: {
@@ -183,7 +229,7 @@
           add: 'Add a name & response', name: 'Name', response: 'Response', cancel: 'Cancel', save: 'Save',
           filled: (n)=>`${n}/16 filled`, lines: (n)=>`${n} bingo line${n===1?'':'s'}`
         },
-        // 40 facts; board chooses 25 random unique items per player
+        // 40 facts; board chooses 16 random unique items per player
         facts: [
           '…has worked at the company for over 10 years',
           '…has a hidden talent they’ve performed publicly',
@@ -235,7 +281,46 @@
           filled: (n)=>`${n}/16 完了`, lines: (n)=>`ビンゴ ${n} ライン`
         },
         facts: [
-          '…勤続10年以上の人', '…人前で披露した隠れた特技がある人', '…5カ国以上に旅行したことがある人', '…2言語以上を話せる人', '…有名人に会ったことがある人', '…フルマラソンや大きな運動チャレンジを達成した人', '…犬や猫以外のペットがいる人', '…3都市以上に住んだことがある人', '…あなたと同じ誕生月の人', '…全く違う業界で働いたことがある人', '…副業や情熱的に取り組むプロジェクトがある人', '…入社6カ月未満の人', '…ユニークな趣味（例：養蜂、陶芸、フェンシング）を持つ人', '…コーヒーを飲んだことがない人', '…テレビやラジオに出たことがある人', '…双子、または双子の兄弟姉妹がいる人', '…スカイダイビングやバンジージャンプをしたことがある人', '…物語のあるタトゥーがある人', '…過去1カ月でコンサートに行った人', '…今年20冊以上本を読んだ人', '…海外でリモートワークをしたことがある人', '…珍しいコレクションを集めている人', '…演劇に参加したことがある人', '…今も使っているニックネームがある人', '…コンテストや賞を受賞したことがある人', '…おすすめのポッドキャストがある人', '…バケットリストを達成したことがある人', '…カラオケの十八番がある人', '…有名人のモノマネができる人', '…変わった食べ合わせが好きな人（そして譲らない）', '…人間の名前のペットがいる人', '…エクストリームスポーツをしたことがある人（生還済み）', '…有名人に間違えられたことがある人', '…バズったTikTok/リールがある（もしくは知り合いにいる）', '…つい多用してしまうお気に入りの絵文字がある人', '…（娯楽として）お気に入りの陰謀論がある人', '…共感するお気に入りの架空のキャラクターがいる人', '…旅行の失敗談がある人', '…お気に入りのボードゲーム・カードゲームがある人', '…絶対に食べない食べ物がある人'
+          '…勤続10年以上の人',
+          '…人前で披露した隠れた特技がある人',
+          '…5カ国以上に旅行したことがある人',
+          '…3言語以上を話せる人',
+          '…有名人に会ったことがある人',
+          '…フルマラソンや大きなフィットネス挑戦を完走した人',
+          '…犬・猫以外のペットを飼っている人',
+          '…3都市以上に住んだことがある人',
+          '…あなたと同じ誕生月の人',
+          '…まったく別業界で働いていたことがある人',
+          '…副業や情熱プロジェクトがある人',
+          '…入社して6か月未満の人',
+          '…珍しい趣味（例：養蜂・陶芸・フェンシング）を持つ人',
+          '…コーヒーを飲んだことがない人',
+          '…テレビやラジオに出たことがある人',
+          '…双子、または双子の兄弟姉妹がいる人',
+          '…スカイダイビングやバンジーをしたことがある人',
+          '…ストーリーのあるタトゥーを入れている人',
+          '…直近1か月でコンサートに行った人',
+          '…今年20冊以上本を読んだ人',
+          '…海外からリモート勤務したことがある人',
+          '…ちょっと変わったコレクションを集めている人',
+          '…舞台や演劇に参加したことがある人',
+          '…今も使っているニックネームがある人',
+          '…コンテストや賞を受賞したことがある人',
+          '…おすすめのお気に入りポッドキャストがある人',
+          '…バケットリストを一つ達成したことがある人',
+          '…定番のカラオケ曲がある人',
+          '…その場で有名人のモノマネができる人',
+          '…大好きな変わり種フードの組み合わせがある人',
+          '…人の名前のようなペットの名前をつけている人',
+          '…エクストリームスポーツに挑戦したことがある人',
+          '…有名人に間違えられたことがある人',
+          '…バズったTikTokやリールがある（または知り合いにいる）人',
+          '…つい使いすぎるお気に入りの絵文字がある人',
+          '…（冗談で）お気に入りの陰謀論がある人',
+          '…共感するお気に入りの架空のキャラクターがいる人',
+          '…旅の失敗談を持っている人',
+          '…お気に入りのボドゲ・トランプゲームがある人',
+          '…絶対に食べない食べ物がある人'
         ]
       },
       id: {
@@ -246,119 +331,194 @@
           filled: (n)=>`${n}/16 terisi`, lines: (n)=>`${n} garis bingo`
         },
         facts: [
-          '…sudah bekerja di perusahaan lebih dari 10 tahun', '…punya bakat tersembunyi yang pernah ditampilkan', '…pernah ke lebih dari 5 negara', '…bisa berbicara lebih dari dua bahasa', '…pernah bertemu orang terkenal', '…pernah ikut marathon atau tantangan kebugaran besar', '…punya hewan peliharaan selain anjing/kucing', '…pernah tinggal di lebih dari tiga kota', '…punya bulan lahir yang sama denganmu', '…pernah bekerja di industri yang berbeda sama sekali', '…punya usaha sampingan/proyek passion', '…bergabung kurang dari 6 bulan', '…punya hobi unik (mis. beternak lebah, tembikar, anggar)', '…tidak pernah minum kopi', '…pernah muncul di TV/radio', '…punya saudara kembar atau dia kembar', '…pernah skydiving atau bungee jumping', '…punya tato dengan cerita di baliknya', '…pernah nonton konser bulan lalu', '…tahun ini baca >20 buku', '…pernah kerja remote dari luar negeri', '…punya koleksi unik', '…pernah terlibat teater', '…punya nama panggilan yang masih dipakai', '…pernah menang lomba/penghargaan', '…punya podcast favorit', '…pernah menuntaskan bucket list', '…punya lagu karaoke andalan', '…bisa menirukan selebritas', '…suka kombinasi makanan unik (dan akan membelanya!)', '…punya hewan peliharaan bernama manusia', '…pernah coba olahraga ekstrem (dan selamat)', '…pernah dikira orang terkenal', '…punya TikTok/Reel viral (atau kenal yang punya)', '…emoji favorit yang sering dipakai', '…teori konspirasi favorit (sekadar hiburan!)', '…tokoh fiksi favorit yang merepresentasikan diri', '…punya cerita gagal saat traveling', '…punya board/card game favorit', '…ada makanan yang pantang dimakan kapan pun'
+          '…sudah bekerja di perusahaan >10 tahun',
+          '…punya bakat tersembunyi yang pernah ditampilkan',
+          '…pernah ke lebih dari 5 negara',
+          '…bisa berbicara lebih dari dua bahasa',
+          '…pernah bertemu orang terkenal',
+          '…pernah lari maraton atau tantangan kebugaran besar',
+          '…punya peliharaan selain anjing/kucing',
+          '…pernah tinggal di lebih dari tiga kota',
+          '…punya bulan lahir yang sama denganmu',
+          '…pernah kerja di industri yang sama sekali berbeda',
+          '…punya side hustle atau proyek passion',
+          '…bergabung kurang dari 6 bulan',
+          '…punya hobi unik (contoh: beternak lebah, tembikar, anggar)',
+          '…tidak pernah minum kopi',
+          '…pernah tampil di TV atau radio',
+          '…punya kembaran / adalah anak kembar',
+          '…pernah skydiving atau bungee jumping',
+          '…punya tato dengan cerita di baliknya',
+          '…hadir di konser dalam 1 bulan terakhir',
+          '…sudah baca >20 buku tahun ini',
+          '…pernah kerja jarak jauh dari negara lain',
+          '…mengoleksi sesuatu yang tidak biasa',
+          '…pernah ikut produksi teater',
+          '…punya nama panggilan yang masih dipakai',
+          '…pernah menang kompetisi atau penghargaan',
+          '…punya podcast favorit untuk direkomendasikan',
+          '…sudah menuntaskan salah satu bucket list',
+          '…punya lagu karaoke andalan',
+          '…bisa menirukan selebritas saat itu juga',
+          '…punya kombinasi makanan aneh tapi enak (katanya!)',
+          '…punya hewan peliharaan bernama manusia',
+          '…pernah coba olahraga ekstrem (dan selamat)',
+          '…pernah disangka sebagai orang terkenal',
+          '…punya TikTok/Reel viral (atau kenal yang punya)',
+          '…punya emoji favorit yang sering dipakai',
+          '…punya teori konspirasi favorit (sekadar seru-seruan)',
+          '…punya tokoh fiksi favorit yang related',
+          '…punya cerita gagal saat traveling',
+          '…punya board game/kartu favorit',
+          '…ada makanan yang sama sekali tidak mau dimakan'
         ]
       }
     };
 
-    // Question-to-icon mapping (Font Awesome class + emoji fallback)
+    // =====================
+    // Icon mapping (40 items)
+    // =====================
     const ICONS = [
-      { fa:'fa-briefcase', emoji:'💼' }, { fa:'fa-masks-theater', emoji:'🎭' }, { fa:'fa-plane', emoji:'✈️' }, { fa:'fa-language', emoji:'🗣️' },
-      { fa:'fa-star', emoji:'⭐' }, { fa:'fa-person-running', emoji:'🏃' }, { fa:'fa-paw', emoji:'🐾' }, { fa:'fa-city', emoji:'🏙️' },
-      { fa:'fa-cake-candles', emoji:'🎂' }, { fa:'fa-industry', emoji:'🏭' }, { fa:'fa-fire', emoji:'🔥' }, { fa:'fa-user-plus', emoji:'🆕' },
-      { fa:'fa-palette', emoji:'🎨' }, { fa:'fa-mug-saucer', emoji:'☕' }, { fa:'fa-tv', emoji:'📺' }, { fa:'fa-people-arrows', emoji:'👯' },
-      { fa:'fa-parachute-box', emoji:'🪂' }, { fa:'fa-signature', emoji:'🖋️' }, { fa:'fa-music', emoji:'🎵' }, { fa:'fa-book', emoji:'📚' },
-      { fa:'fa-globe', emoji:'🌍' }, { fa:'fa-stamp', emoji:'🧸' }, { fa:'fa-masks-theater', emoji:'🎭' }, { fa:'fa-user-tag', emoji:'🏷️' },
-      { fa:'fa-trophy', emoji:'🏆' }, { fa:'fa-podcast', emoji:'🎙️' }, { fa:'fa-list-check', emoji:'✅' }, { fa:'fa-microphone', emoji:'🎤' },
-      { fa:'fa-face-smile', emoji:'😊' }, { fa:'fa-burger', emoji:'🍔' }, { fa:'fa-dog', emoji:'🐶' }, { fa:'fa-person-hiking', emoji:'🥾' },
-      { fa:'fa-user-secret', emoji:'🕵️' }, { fa:'fa-clapperboard', emoji:'🎬' }, { fa:'fa-face-grin-hearts', emoji:'😍' }, { fa:'fa-wand-magic-sparkles', emoji:'✨' },
-      { fa:'fa-dice', emoji:'🎲' }, { fa:'fa-ban', emoji:'🚫' }
+      { fa: 'fa-briefcase', emoji: '🏢' }, // 1
+      { fa: 'fa-masks-theater', emoji: '🎤' }, // 2 hidden talent performed
+      { fa: 'fa-earth-americas', emoji: '🌍' }, // 3 travelled >5 countries
+      { fa: 'fa-language', emoji: '🗣️' }, // 4 speaks >2 languages
+      { fa: 'fa-star', emoji: '⭐' }, // 5 met someone famous
+      { fa: 'fa-person-running', emoji: '🏃' }, // 6 marathon / fitness
+      { fa: 'fa-paw', emoji: '🦎' }, // 7 non dog/cat pet
+      { fa: 'fa-city', emoji: '🏙️' }, // 8 lived >3 cities
+      { fa: 'fa-cake-candles', emoji: '🎂' }, // 9 same birth month
+      { fa: 'fa-rotate', emoji: '🔄' }, // 10 different industry
+      { fa: 'fa-lightbulb', emoji: '💡' }, // 11 side hustle
+      { fa: 'fa-seedling', emoji: '🆕' }, // 12 <6 months
+      { fa: 'fa-palette', emoji: '🎨' }, // 13 unique hobby
+      { fa: 'fa-mug-saucer', emoji: '🚫☕' }, // 14 never coffee
+      { fa: 'fa-tv', emoji: '📺' }, // 15 TV or radio
+      { fa: 'fa-people-pulling', emoji: '👯' }, // 16 twin (closest available)
+      { fa: 'fa-parachute-box', emoji: '🪂' }, // 17 skydiving/bungee (approx)
+      { fa: 'fa-pen-nib', emoji: '🖋️' }, // 18 tattoo
+      { fa: 'fa-music', emoji: '🎶' }, // 19 concert last month
+      { fa: 'fa-book-open', emoji: '📚' }, // 20 >20 books
+      { fa: 'fa-laptop-house', emoji: '💻' }, // 21 remote from another country
+      { fa: 'fa-box-archive', emoji: '📦' }, // 22 unusual collection
+      { fa: 'fa-masks-theater', emoji: '🎭' }, // 23 theatre production
+      { fa: 'fa-id-badge', emoji: '🏷️' }, // 24 nickname
+      { fa: 'fa-trophy', emoji: '🏆' }, // 25 award
+      { fa: 'fa-podcast', emoji: '🎧' }, // 26 podcast
+      { fa: 'fa-list-check', emoji: '✅' }, // 27 bucket list done
+      { fa: 'fa-microphone', emoji: '🎤' }, // 28 karaoke
+      { fa: 'fa-face-grin-stars', emoji: '😎' }, // 29 celeb impression
+      { fa: 'fa-burger', emoji: '🍕' }, // 30 weird food combo
+      { fa: 'fa-dog', emoji: '🐶' }, // 31 pet with human name
+      { fa: 'fa-person-skiing', emoji: '🏄' }, // 32 extreme sport (approx)
+      { fa: 'fa-user-check', emoji: '👀' }, // 33 mistaken for famous (approx)
+      { fa: 'fa-mobile-screen', emoji: '📱' }, // 34 viral tiktok/reel
+      { fa: 'fa-face-grin', emoji: '😊' }, // 35 favourite emoji
+      { fa: 'fa-user-secret', emoji: '🛸' }, // 36 conspiracy (for fun)
+      { fa: 'fa-hat-wizard', emoji: '🦸' }, // 37 fictional character relate (approx)
+      { fa: 'fa-suitcase-rolling', emoji: '🧳' }, // 38 travel fail
+      { fa: 'fa-chess-board', emoji: '🎲' }, // 39 board/card game
+      { fa: 'fa-ban', emoji: '🚫🍽️' }  // 40 refuse to eat
     ];
 
-    // ====================
-    // State & persistence
-    // ====================
-    const state = {
-      lang: 'en', started: false, randomsLeft: 3, bingoScale: 1,
-      grid: [], // holds 16 indices into I18N[lang].facts
-      answers: {}, // { [cellIndex]: { name, resp } }
-      completedLines: new Set()
-    };
+    // Pre-build emoji array for convenience (same order as ICONS)
+    const EMOJI_FALLBACK = ICONS.map(x => x.emoji);
 
-    const app = document.getElementById('app');
+    // =====================
+    // Element references
+    // =====================
     const boardEl = document.getElementById('board');
     const randomBtn = document.getElementById('randomBtn');
-    const startBtn = document.getElementById('startBtn');
-    const resetBtn = document.getElementById('resetBtn');
+    const startBtn  = document.getElementById('startBtn');
+    const rndLeftEl = document.getElementById('rndLeft');
     const progressEl = document.getElementById('progress');
-    const preHint = document.getElementById('preHint');
-    const langSel = document.getElementById('lang');
     const darkToggle = document.getElementById('darkToggle');
+    const darkTag = document.getElementById('darkTag');
 
-    const modal = document.getElementById('modal');
+    const modal = document.getElementById('entryModal');
     const nameInput = document.getElementById('nameInput');
     const respInput = document.getElementById('respInput');
+    const modalFact = document.getElementById('modalFact');
+    const modalTitle = document.getElementById('modalTitle');
+    const nameLabel = document.getElementById('nameLabel');
+    const respLabel = document.getElementById('respLabel');
     const cancelBtn = document.getElementById('cancelBtn');
     const saveBtn = document.getElementById('saveBtn');
 
-    const bingoOverlay = document.getElementById('bingoOverlay');
+    const overlay = document.getElementById('bingoOverlay');
+    const bingoText = document.getElementById('bingoText');
 
-    // Load/save simple state from localStorage
-    function saveState(){ localStorage.setItem('wtfay', JSON.stringify({
-      lang: state.lang, started: state.started, randomsLeft: state.randomsLeft,
-      grid: state.grid, answers: state.answers
-    })); }
+    const langSel = document.getElementById('langSel');
+    const langLabel = document.getElementById('langLabel');
 
+    const i18nEls = document.querySelectorAll('[data-i18n]');
+    const preHint = document.getElementById('preHint');
+    const howto = document.getElementById('howto');
+
+    // =============
+    // App state
+    // =============
+    /*
+      completedLines uses a Set. When storing to localStorage we stringify it as an array
+      and revive back to Set on load to avoid "has is not a function" errors.
+    */
+    let state = {
+      lang: localStorage.getItem('wtaf-lang') || 'en',
+      grid: [],            // 16 picked indices into facts
+      answers: {},         // idx -> {name, resp}
+      started: false,
+      randomLeft: 3,
+      completedLines: new Set(),
+      bingoScale: 1
+    };
+
+    // ---------- Persist/Revive helpers for Set ----------
+    function toSavableState(s){
+      const copy = {...s};
+      copy.completedLines = Array.from(s.completedLines || []);
+      return copy;
+    }
+    function fromSavedState(s){
+      if (!s) return null;
+      const revived = {...s};
+      revived.completedLines = new Set(Array.isArray(s.completedLines) ? s.completedLines : []);
+      return revived;
+    }
+
+    function saveState(){
+      localStorage.setItem('wtaf-state', JSON.stringify(toSavableState(state)));
+      localStorage.setItem('wtaf-lang', state.lang);
+    }
     function loadState(){
       try {
-        const raw = localStorage.getItem('wtfay');
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        state.lang = data.lang ?? state.lang;
-        state.started = !!data.started;
-        state.randomsLeft = Number.isFinite(data.randomsLeft) ? data.randomsLeft : state.randomsLeft;
-        state.grid = Array.isArray(data.grid) ? data.grid.slice(0,16) : state.grid;
-        state.answers = data.answers || {};
+        const s = JSON.parse(localStorage.getItem('wtaf-state'));
+        const revived = fromSavedState(s);
+        if (revived && Array.isArray(revived.grid) && revived.grid.length===16) {
+          state = {...state, ...revived};
+        }
       } catch(e){ /* ignore */ }
     }
 
-    // Unlock audio on first user gesture (required by browsers)
-    let audioCtx = null, unlocked = false;
-    function ensureAudio(){ if (!audioCtx){ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } }
-    window.addEventListener('pointerdown', ()=>{ ensureAudio(); if (audioCtx.state === 'suspended'){ audioCtx.resume(); } unlocked = true; }, { once: true });
-
-    // Simple crowd clapping synthesized via WebAudio – low volume
-    function noiseBuffer(){
-      // Create white noise buffer
-      const samples = 48000 * 0.25; // 0.25s chunk
-      const buf = audioCtx.createBuffer(1, samples, 48000);
-      const data = buf.getChannelData(0);
-      for(let i=0;i<samples;i++){ data[i] = (Math.random()*2-1) * Math.pow(1 - i/samples, 2.2); }
-      return buf;
-    }
-    function playCrowdClap(){
-      if (!unlocked) return; // respect autoplay policies
-      const master = audioCtx.createGain();
-      master.gain.value = 0.25; // gentle volume
-      master.connect(audioCtx.destination);
-      // Sequence of short clap-like envelopes; slightly staggered to mimic a crowd
-      for(let i=0;i<7;i++){
-        const t = audioCtx.currentTime + i*0.09;
-        const src = audioCtx.createBufferSource(); src.buffer = noiseBuffer();
-        const hp = audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1800;
-        const g = audioCtx.createGain(); g.gain.setValueAtTime(0.00001, t); g.gain.linearRampToValueAtTime(1, t+0.012); g.gain.exponentialRampToValueAtTime(0.0001, t+0.14);
-        src.connect(hp).connect(g).connect(master);
-        src.start(t); src.stop(t+0.22);
-      }
+    // -------------- i18n application --------------
+    function applyLang(){
+      langSel.value = state.lang;
+      langLabel.textContent = I18N[state.lang].ui.language;
+      darkToggle.textContent = (state.lang==='ja'?'🌙 ダークモード': state.lang==='id'?'🌙 Mode Gelap':'🌙 Dark mode');
+      preHint.textContent = I18N[state.lang].ui.prehint;
+      howto.textContent = I18N[state.lang].ui.howto;
+      modalTitle.textContent = I18N[state.lang].ui.add;
+      nameLabel.textContent = I18N[state.lang].ui.name;
+      respLabel.textContent = I18N[state.lang].ui.response;
+      cancelBtn.textContent = I18N[state.lang].ui.cancel;
+      saveBtn.textContent = I18N[state.lang].ui.save;
+      i18nEls.forEach(el => el.textContent = I18N[state.lang].ui[el.dataset.i18n]);
+      renderBoard();
+      updateProgress();
+      saveState();
     }
 
-    // ====================
-    // Font Awesome detect
-    // ====================
-    function detectFontAwesome(){
-      try {
-        if (document.fonts && document.fonts.check("1em 'Font Awesome 6 Free'")) {
-          document.body.classList.add('fa-loaded');
-        } else {
-          document.body.classList.remove('fa-loaded');
-        }
-      } catch(e){ /* best effort */ }
-    }
-
-    // ====================
-    // Randomisation & board
-    // ====================
-    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+    // -------------- Utility --------------
+    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
 
     // Create a fresh 4x4 board by sampling 16 unique indices from 40 facts
     function randomiseGrid(){
@@ -374,16 +534,28 @@
       saveState();
     }
 
-    function tileTextByIndex(idx){ return I18N[state.lang].facts[state.grid[idx]]; }
-    function tileIconByIndex(idx){ const factIdx = state.grid[idx]; return ICONS[factIdx] || { fa: 'fa-circle-question', emoji: '❓' }; }
+    function tileTextByIndex(idx){
+      return I18N[state.lang].facts[state.grid[idx]];
+    }
+    function tileIconByIndex(idx){
+      const factIdx = state.grid[idx];
+      return ICONS[factIdx] || { fa: 'fa-circle-question', emoji: '❓' };
+    }
 
     // ------------------ Board rendering ------------------
     function renderBoard(){
-      boardEl.innerHTML = '';
-      if (state.grid.length!==16) { // first load
+      // defensive: ensure grid is at most 16 long
+      if (!Array.isArray(state.grid) || state.grid.length !== 16) {
+        // create a fresh grid if invalid
         randomiseGrid();
+        return; // randomiseGrid will call renderBoard when ready
       }
-      for (let idx=0; idx<16; idx++){
+
+      boardEl.innerHTML = '';
+
+      // Use the actual grid length (defensive) — this prevents accidental duplication
+      const count = Math.min(16, state.grid.length);
+      for (let idx=0; idx<count; idx++){
         const text = tileTextByIndex(idx);
         const icon = tileIconByIndex(idx);
         const tile = document.createElement('button');
@@ -391,7 +563,8 @@
         tile.setAttribute('data-index', idx);
         const entry = state.answers[idx];
 
-        // Show ONLY one Name (next to arrow). Response shows below.
+        // NOTE (requested change): show ONLY one Name — next to the arrow in the meta line.
+        // Inside the details area we now show only the Response (no duplicate Name).
         tile.innerHTML = `
           <i class="fa-solid ${icon.fa} fa-icon" aria-hidden="true"></i>
           <span class="emoji-fallback" aria-hidden="true">${icon.emoji}</span>
@@ -412,22 +585,16 @@
     }
 
     // Escape user text to avoid XSS
-    function escapeHtml(str){ return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[s])); }
+    function escapeHtml(str){
+      return str.replace(/[&<>\"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[s]));
+    }
 
     // ------------------ Modal interaction ------------------
     let currentIdx = null; // the tile index currently being edited
-    function onTileClick(idx, factText){
-      if (!state.started){
-        // Allow up to 3 randomises before start; after starting, disable randomisation
-        alert('Tap "Start Bingo" first, then fill tiles. You can shuffle up to 3× before starting.');
-        return;
-      }
+    function onTileClick(idx, text){
+      if (!state.started) return; // tiles become editable only after Start
       currentIdx = idx;
-      document.getElementById('modalTitle').textContent = `${I18N[state.lang].ui.add}`;
-      document.getElementById('nameLabel').textContent = I18N[state.lang].ui.name;
-      document.getElementById('respLabel').textContent = I18N[state.lang].ui.response;
-      document.getElementById('cancelBtn').textContent = I18N[state.lang].ui.cancel;
-      document.getElementById('saveBtn').textContent = I18N[state.lang].ui.save;
+      modalFact.textContent = text;
       nameInput.value = state.answers[idx]?.name || '';
       respInput.value = state.answers[idx]?.resp || '';
       // Some mobile browsers throw on showModal; fall back to open attribute.
@@ -435,25 +602,7 @@
       setTimeout(()=>nameInput.focus(), 50);
     }
 
-    function closeModal(){ try { modal.close(); } catch(e){ modal.removeAttribute('open'); } }
-
-    cancelBtn.addEventListener('click', ()=>{ closeModal(); });
-    modal.addEventListener('click', (e)=>{ if (e.target === modal) closeModal(); });
-
-    saveBtn.addEventListener('click', ()=>{
-      if (currentIdx==null) return;
-      const name = nameInput.value.trim();
-      const resp = respInput.value.trim();
-      if (!name){ nameInput.focus(); return; }
-      state.answers[currentIdx] = { name, resp };
-      closeModal();
-      renderBoard();
-      checkForNewBingo();
-      updateProgress();
-      saveState();
-    });
-
-    // Update the progress text (now 16 tiles)
+    // Update the progress text ("x/16 filled · y bingo lines")
     function updateProgress(){
       const filled = Object.keys(state.answers).length;
       const lines = calculateBingoLines();
@@ -488,113 +637,178 @@
       saveState();
     }
 
-    // Display scalable BINGO + confetti; tap to dismiss
+    // Display scalable BINGO text + a short confetti burst; tap overlay to dismiss
     function showBingo(){
-      const s = Math.min(1.0 * state.bingoScale, 4); // clamp max size
-      bingoOverlay.querySelector('.bingo').style.transform = `scale(${s})`;
-      bingoOverlay.classList.add('show');
-      const end = Date.now() + 600;
+      overlay.classList.add('show');
+      bingoText.style.transform = `scale(${state.bingoScale})`;
+      bingoText.textContent = 'BINGO!';
+      const duration = 1200;
+      const end = Date.now() + duration;
       (function frame(){
-        confetti({ particleCount: 12, spread: 60, startVelocity: 24, origin: { y: 0.6 }, scalar: s*0.8 });
+        confetti({particleCount: 4, spread: 60, startVelocity: 28, origin: { x: Math.random(), y: Math.random()*0.3 }});
         if (Date.now() < end) requestAnimationFrame(frame);
       })();
     }
-    bingoOverlay.addEventListener('click', ()=> bingoOverlay.classList.remove('show'));
+    overlay.addEventListener('click', ()=> overlay.classList.remove('show'));
 
-    // --------------- Language & theme ---------------
-    function applyLang(){
-      const ui = I18N[state.lang].ui;
-      document.querySelector('label[for="lang"]').textContent = ui.language;
-      document.querySelector('label[for="darkToggle"]').textContent = ui.dark;
-      randomBtn.textContent = ui.randomize;
-      startBtn.textContent = ui.start;
-      resetBtn.textContent = ui.reset;
-      preHint.textContent = ui.prehint;
-      updateProgress();
-      renderBoard();
-    }
-
-    langSel.addEventListener('change', ()=>{ state.lang = langSel.value; saveState(); applyLang(); });
-    darkToggle.addEventListener('change', ()=>{ document.documentElement.dataset.theme = darkToggle.checked ? 'dark' : ''; });
-
-    // --------------- Start / Reset / Randomise ---------------
+    // ------------------ Controls wiring ------------------
     randomBtn.addEventListener('click', ()=>{
-      if (state.started) return; // lock after start
-      if (state.randomsLeft <= 0) return;
-      state.randomsLeft--; randomiseGrid();
-      randomBtn.textContent = `${I18N[state.lang].ui.randomize} (${state.randomsLeft} left)`;
+      if (state.started) return;          // randomize disabled once the game starts
+      if (state.randomLeft<=0) return;    // maximum 3 shuffles
+      state.randomLeft--; rndLeftEl.textContent = state.randomLeft;
+      randomiseGrid();
     });
 
     startBtn.addEventListener('click', ()=>{
-      if (!state.started){
-        state.started = true;
-        preHint.textContent = I18N[state.lang].ui.howto;
+      if (!state.started) {
+        // Transition to started mode: lock randomize, change button to Reset, hide hint
+        state.started = true; saveState();
+        document.getElementById('preHint').style.display='none';
+        startBtn.classList.remove('primary');
+        startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`;
         randomBtn.disabled = true;
-        startBtn.style.display = 'none';
-        resetBtn.style.display = 'inline-block';
-        saveState();
+        resumeAudio(); // prime WebAudio so we can play claps later
       } else {
-        // If clicked again (safety), this acts as reset
+        // Reset board: clear answers, bingos, scale; re-enable randomize and shuffle count
         state.started = false;
-        state.randomsLeft = 3;
         state.answers = {};
-        state.completedLines.clear();
+        state.completedLines = new Set();
         state.bingoScale = 1;
+        state.randomLeft = 3; rndLeftEl.textContent = '3';
+        startBtn.classList.add('primary');
+        startBtn.innerHTML = `▶ ${I18N[state.lang].ui.start}`;
         randomBtn.disabled = false;
-        startBtn.style.display = 'inline-block';
-        resetBtn.style.display = 'none';
-        randomBtn.textContent = I18N[state.lang].ui.randomize;
         renderBoard();
         updateProgress();
         saveState();
       }
     });
 
-    resetBtn.addEventListener('click', ()=>{
-      // Reset answers and allow randomise again
-      state.started = false; state.randomsLeft = 3; state.answers = {}; state.completedLines.clear(); state.bingoScale = 1;
-      randomBtn.disabled = false; startBtn.style.display = 'inline-block'; resetBtn.style.display = 'none';
-      randomBtn.textContent = I18N[state.lang].ui.randomize;
-      renderBoard();
-      updateProgress();
-      saveState();
+    darkToggle.addEventListener('click', ()=>{
+      document.body.classList.toggle('dark');
+      const on = document.body.classList.contains('dark');
+      darkToggle.setAttribute('aria-pressed', on?'true':'false');
+      darkTag.textContent = on? '☾ Dark' : '☼ Light';
+      localStorage.setItem('wtaf-dark', on?'1':'0');
     });
 
-    // ===============
-    // Initial boot
-    // ===============
-    loadState();
-    // Ensure we always have a 4x4 grid in memory
-    if (!Array.isArray(state.grid) || state.grid.length !== 16){
-      state.grid = []; // trigger first-time randomise
-    }
-    applyLang();
-    renderBoard();
+    langSel.addEventListener('change', ()=>{ state.lang = langSel.value; applyLang(); });
 
-    // --------- Inline tests (kept, updated for 4×4) ---------
-    function bingoLinesFromAnswers(answers){
-      const filled = new Set(Object.keys(answers).map(Number));
-      const lines = [];
-      for (let r=0;r<4;r++){ lines.push([0,1,2,3].map(c=>r*4+c)); }
-      for (let c=0;c<4;c++){ lines.push([0,1,2,3].map(r=>r*4+c)); }
-      lines.push([0,5,10,15]);
-      lines.push([3,6,9,12]);
-      const completed = new Set();
-      lines.forEach((l,i)=>{ if(l.every(x=>filled.has(x))) completed.add(i); });
-      return completed;
+    // Modal buttons
+    saveBtn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      const resp = respInput.value.trim();
+      if (!name || !resp) return; // both required
+      state.answers[currentIdx] = {name, resp};
+      try { modal.close(); } catch(e){ modal.removeAttribute('open'); }
+      renderBoard();
+      checkForNewBingo();
+    });
+    cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); try { modal.close(); } catch(e2){ modal.removeAttribute('open'); } });
+
+    // ================================
+    // Celebration sound: crowd clapping
+    // ================================
+    let audioCtx = null; let unlocked = false;
+    function resumeAudio(){
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      unlocked = true;
     }
-    // Test 2: Row bingo
-    const row = {0:{},1:{},2:{},3:{}};
-    console.assert(bingoLinesFromAnswers(row).size===1, 'row should be 1 bingo');
-    // Test 3: Column bingo
-    const col = {0:{},4:{},8:{},12:{}};
-    console.assert(bingoLinesFromAnswers(col).size===1, 'column should be 1 bingo');
-    // Test 4: Diagonal bingo
-    const diag = {0:{},5:{},10:{},15:{}};
-    console.assert(bingoLinesFromAnswers(diag).size===1, 'diagonal should be 1 bingo');
-    // Test 5: Two lines (row + column share cell 0)
-    const two = {0:{},1:{},2:{},3:{},4:{},8:{},12:{}};
-    console.assert(bingoLinesFromAnswers(two).size===2, 'two lines should be 2 bingos');
+    window.addEventListener('pointerdown', resumeAudio, { once: true });
+
+    function noiseBuffer(){
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate*1.5, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for(let i=0;i<data.length;i++){ data[i] = Math.random()*2-1; }
+      return buffer;
+    }
+    function playCrowdClap(){
+      if (!unlocked) return; // respect autoplay policies
+      const master = audioCtx.createGain();
+      master.gain.value = 0.25; // gentle volume
+      master.connect(audioCtx.destination);
+      for(let i=0;i<7;i++){
+        const t = audioCtx.currentTime + i*0.09;
+        const src = audioCtx.createBufferSource(); src.buffer = noiseBuffer();
+        const hp = audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1800;
+        const g = audioCtx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t+0.012); g.gain.exponentialRampToValueAtTime(0.0001, t+0.14);
+        src.connect(hp).connect(g).connect(master);
+        src.start(t); src.stop(t+0.22);
+      }
+    }
+
+    // ====================
+    // Font Awesome detect
+    // ====================
+    function detectFontAwesome(){
+      try {
+        if (document.fonts && document.fonts.check("1em 'Font Awesome 6 Free'")) {
+          document.body.classList.add('fa-loaded');
+        } else {
+          document.body.classList.remove('fa-loaded');
+        }
+      } catch(e) {
+        document.body.classList.remove('fa-loaded');
+      }
+    }
+
+    // ====================
+    // Boot sequence
+    // ====================
+    loadState();
+    document.body.classList.toggle('dark', localStorage.getItem('wtaf-dark')==='1');
+    rndLeftEl.textContent = state.randomLeft;
+    applyLang();
+    if (state.started) { // recover UI state after refresh
+      startBtn.classList.remove('primary');
+      startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`;
+      randomBtn.disabled = true;
+    }
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(detectFontAwesome);
+    } else {
+      setTimeout(detectFontAwesome, 500);
+    }
+
+    // ========================================================
+    // Runtime tests (in console) to catch common regressions
+    // ========================================================
+    (function runTests(){
+      console.groupCollapsed('WhoTheFact – runtime tests');
+      const tempState = { completedLines: new Set([1,2,7]) };
+      const saved = JSON.stringify(toSavableState(tempState));
+      const revived = fromSavedState(JSON.parse(saved));
+      console.assert(revived.completedLines instanceof Set, 'completedLines should revive to Set');
+      console.assert(revived.completedLines.has(7), 'revived set should contain 7');
+
+      function bingoLinesFromAnswers(answers){
+        const filled = new Set(Object.keys(answers).map(Number));
+        const lines = [];
+        for (let r=0;r<4;r++){ lines.push([0,1,2,3].map(c=>r*4+c)); }
+        for (let c=0;c<4;c++){ lines.push([0,1,2,3].map(r=>r*4+c)); }
+        lines.push([0,5,10,15]);
+        lines.push([3,6,9,12]);
+        const completed = new Set();
+        lines.forEach((l,i)=>{ if(l.every(x=>filled.has(x))) completed.add(i); });
+        return completed;
+      }
+      // Test 2: Row bingo
+      const row = {0:{},1:{},2:{},3:{}};
+      console.assert(bingoLinesFromAnswers(row).size===1, 'row should be 1 bingo');
+      // Test 3: Column bingo
+      const col = {0:{},4:{},8:{},12:{}};
+      console.assert(bingoLinesFromAnswers(col).size===1, 'column should be 1 bingo');
+      // Test 4: Diagonal bingo
+      const diag = {0:{},5:{},10:{},15:{}};
+      console.assert(bingoLinesFromAnswers(diag).size===1, 'diagonal should be 1 bingo');
+      // Test 5: Two lines (row + column share cell 0)
+      const two = {0:{},1:{},2:{},3:{},4:{},8:{},12:{}};
+      console.assert(bingoLinesFromAnswers(two).size===2, 'two lines should be 2 bingos');
+      console.groupEnd();
+    })();
   </script>
 </body>
 </html>
