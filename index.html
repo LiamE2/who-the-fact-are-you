@@ -1,814 +1,695 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Who the Fact Are You? – Engage Squared</title>
-  <!-- Google font for a friendly look -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
-  <!-- Font Awesome for per-question icons (plus we provide emoji fallback) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <!-- Lightweight confetti library -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-  <style>
-    /*
-      Design tokens via CSS variables.
-      We flip these in dark mode by changing the body class.
-    */
-    :root {
-      --brand-red: #e53935; /* red pulled from/near logo */
-      --bg: #ffffff;
-      --text: #111111;
-      --muted: #6b7280;
-      --tile: #fafafa;
-      --tile-border: #ececec;
-      --accent: #ef4444;
-    }
-    body.dark {
-      --bg: #0b0e16;
-      --text: #ffffff;
-      --muted: #d1d5db;
-      --tile: #111827;
-      --tile-border: #1f2937;
-      --accent: #f87171;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Who the Fact Are You? — 4×4 Bingo</title>
 
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-      background: var(--bg);
-      color: var(--text);
-    }
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    /* Red border around the entire screen per request */
-    .app-wrapper {
-      min-height: 100dvh;
-      border: 10px solid var(--brand-red);
-      display: flex;
-      flex-direction: column;
-    }
+<!-- confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-    header {
-      padding: 16px 14px 8px;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 12px;
-      align-items: center;
-    }
-    header img.logo { width: 52px; height: 52px; border-radius: 10px; object-fit: contain; background: #fff; }
-    .brand { line-height: 1.1; }
-    .brand .title { font-weight: 800; font-size: clamp(22px, 6vw, 34px); }
-    .brand .subtitle { font-weight: 600; color: var(--muted); font-size: clamp(12px, 2.6vw, 14px); letter-spacing: 1px; text-transform: uppercase; }
+<style>
+  :root{
+    --brand-red:#e53935;
+    --bg:#ffffff;
+    --text:#111111;
+    --muted:#6b7280;
+    --tile:#fafafa;
+    --tile-border:#ececec;
+    --accent:#ef4444;
+  }
+  body.dark{
+    --bg:#0b0e16; --text:#ffffff; --muted:#d1d5db; --tile:#111827; --tile-border:#1f2937; --accent:#f87171;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text); -webkit-text-size-adjust:100%; }
+  .app-wrapper{ min-height:100dvh; border:10px solid var(--brand-red); display:flex; flex-direction:column; }
 
-    .controls {
-      padding: 8px 14px 12px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      align-items: center;
-    }
-    .control-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    select, button, input[type="text"], textarea {
-      background: var(--tile);
-      color: var(--text);
-      border: 1px solid var(--tile-border);
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 14px;
-    }
-    button {
-      cursor: pointer;
-      font-weight: 600;
-      box-shadow: 0 1px 0 rgba(0,0,0,0.04);
-      transition: transform .05s ease, filter .2s ease;
-    }
-    button:active { transform: translateY(1px); }
-    .primary { background: var(--accent); color: #fff; border: none; }
-    .ghost { background: transparent; }
-    .pill { border-radius: 999px; }
-    .hint { font-size: 12px; color: var(--muted); }
+  header{ padding:14px 16px; display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; }
+  .logo{ width:56px; height:56px; object-fit:contain; border-radius:10px; background:#fff; }
+  .brand .title{ font-weight:800; font-size:clamp(20px,4.5vw,32px); margin:0; }
+  .brand .subtitle{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:2px; }
 
-    /* BOARD: switched to 4×4 */
-    .board {
-      padding: 10px 14px 22px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      flex: 1;
-    }
-    .tile {
-      background: var(--tile);
-      border: 1px solid var(--tile-border);
-      border-radius: 18px;
-      /* Use aspect-ratio to force 1:1 squares on all screens */
-      aspect-ratio: 1 / 1;
-      /* keep a sensible minimum height for larger screens */
-      min-height: min(18vh, 142px);
-      display: flex;
-      flex-direction: column;
-      padding: 12px 12px 44px 12px; /* extra bottom padding so text doesn't overlap icon */
-      position: relative;
-      overflow: hidden;
-      text-align: left;
-    }
-    .tile .fact { font-size: clamp(12px, 2.6vw, 15px); line-height: 1.25; font-weight: 600; padding-right: 6px; }
+  .controls{ padding:10px 16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .controls select, .controls button, .controls input, .controls textarea{ font-size:16px; } /* 16px prevents iOS zoom */
 
-    /* Icon handling: prefer FA when loaded; otherwise show emoji fallback */
-    /* Icons moved to bottom-right to avoid covering text */
-    .tile .fa-icon { position: absolute; right: 10px; bottom: 10px; opacity: .22; font-size: 28px; display: none; }
-    .tile .emoji-fallback { position: absolute; right: 10px; bottom: 10px; opacity: .22; font-size: 28px; display: inline-block; }
-    body.fa-loaded .tile .fa-icon { display: inline-block; }
-    body.fa-loaded .tile .emoji-fallback { display: none; }
+  .btn{ padding:8px 12px; border-radius:999px; border:1px solid var(--tile-border); background:var(--tile); cursor:pointer; color:var(--text); }
+  .btn.primary{ background:var(--accent); color:#fff; border:none; }
+  .hint{ font-size:13px; color:var(--muted); }
 
-    .tile .meta { margin-top: 8px; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-    .tile .entry { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--tile-border); font-size: 12px; line-height: 1.25; }
-    .tile .who { font-weight: 700; }
-    .tile .resp { margin-top: 2px; opacity: .9; }
-    .tile.filled { outline: 3px solid #22c55e; background: linear-gradient(180deg, rgba(16,185,129,.15), transparent 50%); }
-    .check { width: 18px; height: 18px; border-radius: 50%; background: #22c55e; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
+  /* Board: 4 columns; rows auto-size (so all tiles in a row match height of tallest tile) */
+  .board-container{ padding:8px 16px 18px; flex:1; }
+  .board{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:12px;
+    align-items: stretch; /* tiles stretch to same height within row */
+  }
 
-    .footer { padding: 8px 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+  /* Tiles are flexible rectangles (not forced square) */
+  .tile{
+    background:var(--tile);
+    border:1px solid var(--tile-border);
+    border-radius:14px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+    position:relative;
+    padding:12px 12px 48px 12px; /* reserve bottom space for icon */
+    overflow:hidden;
+    text-align:left;
+    min-height:110px;
+    color:var(--text);
+  }
 
-    /* Dialog (modal) styling */
-    dialog.modal { border: none; padding: 0; border-radius: 16px; width: min(560px, 92vw); background: var(--bg); color: var(--text); }
-    .modal .inner { padding: 16px; }
-    .modal h3 { margin: 0 0 8px; }
-    .row { display: grid; gap: 8px; margin: 10px 0; }
-    textarea { resize: vertical; min-height: 70px; }
+  /* Make color explicit so dark mode turns text white */
+  .fact{ font-size:clamp(13px,2.4vw,15px); line-height:1.25; font-weight:600; margin-bottom:8px; word-break:break-word; color:var(--text); }
+  .meta{ margin-top:auto; font-size:12px; color:var(--muted); display:flex; gap:8px; align-items:center; }
+  .entry{ margin-top:8px; font-size:13px; color:var(--text); }
+  .who{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .resp{ margin-top:4px; opacity:.95; font-size:13px; }
 
-    /* Bingo overlay (for big BINGO! and tap-to-dismiss) */
-    .bingo-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); z-index: 50; }
-    .bingo-overlay.show { display: flex; }
-    .bingo-text { font-weight: 800; font-size: 64px; color: #fff; text-shadow: 0 6px 22px rgba(0,0,0,.55); }
+  /* icon bottom-right and emoji fallback */
+  .fa-icon{ position:absolute; right:10px; bottom:10px; opacity:.22; font-size:26px; display:none; pointer-events:none; color:var(--text); }
+  .emoji-fallback{ position:absolute; right:10px; bottom:10px; opacity:.22; font-size:26px; display:inline-block; pointer-events:none; }
+  body.fa-loaded .fa-icon{ display:inline-block; }
+  body.fa-loaded .emoji-fallback{ display:none; }
 
-    .tags { display: flex; gap: 6px; flex-wrap: wrap; }
-    .tag { font-size: 11px; padding: 4px 8px; background: #fee2e2; color: #991b1b; border-radius: 999px; }
-    body.dark .tag { background: #7f1d1d; color: #fee2e2; }
+  .tile.filled{ outline:3px solid #22c55e; background:linear-gradient(180deg, rgba(16,185,129,.08), transparent 50%); }
 
-    @media (min-width: 860px) { .controls { grid-template-columns: 1fr 1fr 1fr; } }
-  </style>
+  /* Modal should follow theme (dark/light) and have readable prompt */
+  dialog.modal{
+    border:none;
+    border-radius:12px;
+    padding:0;
+    width:min(560px,92vw);
+    background:var(--tile);
+    color:var(--text);
+  }
+  dialog.modal::backdrop{ background: rgba(0,0,0,0.35); }
+  .modal .inner{ padding:14px; }
+  .modal .hint{ color:var(--text); font-weight:700; } /* make the prompt darker/easier to read */
+  .modal input, .modal textarea {
+    width:100%;
+    font-size:16px; /* avoid mobile zoom */
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid var(--tile-border);
+    background:var(--bg);
+    color:var(--text);
+  }
+  .modal .actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
+  /* Cancel and Save buttons inside modal should match theme text color; Save remains primary white text */
+  .modal .btn { color:var(--text); background:transparent; border:1px solid var(--tile-border); padding:8px 12px; border-radius:8px; }
+  .modal .btn.primary { background:var(--accent); color:#fff; border:none; }
+
+  textarea{ min-height:90px; }
+
+  .bingo-overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.35); z-index:9999; }
+  .bingo-overlay.show{ display:flex; }
+  .bingo-text{ font-weight:900; font-size:64px; color:#fff; text-shadow:0 6px 22px rgba(0,0,0,.55); }
+
+  footer{ padding:10px 16px; display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--muted); }
+
+  @media (max-width:700px){
+    header{ grid-template-columns:auto 1fr; grid-template-rows:auto auto; gap:6px; }
+    .controls{ padding:8px 12px; gap:8px; }
+    .bingo-text{ font-size:48px; }
+    .tile{ padding:10px 10px 42px 10px; min-height:96px; }
+  }
+</style>
 </head>
 <body>
   <div class="app-wrapper" id="app">
     <header>
-      <!-- Logo from the online link you provided. If it ever fails to load due to hotlinking, download & host locally. -->
-      <img class="logo" src="https://tse2.mm.bing.net/th/id/OIP.vB2_MMCK6wxXLJRR_2APTgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Engage Squared logo" crossorigin="anonymous" />
+      <img class="logo" src="https://tse2.mm.bing.net/th/id/OIP.vB2_MMCK6wxXLJRR_2APTgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Engage Squared logo" onerror="this.src='https://via.placeholder.com/120x40?text=Engage+Squared'">
       <div class="brand">
         <div class="subtitle">ENGAGE SQUARED</div>
         <div class="title">Who the Fact Are You? 🎉</div>
       </div>
-      <div class="tags">
-        <span class="tag" id="darkTag">☾ Dark</span>
-        <span class="tag">4×4 Bingo</span>
-      </div>
-    </header>
-
-    <section class="controls">
-      <div class="control-row">
-        <label for="langSel" id="langLabel">Language:</label>
-        <select id="langSel" aria-label="Language">
+      <div class="controls" style="justify-self:end;">
+        <select id="langSel" aria-label="Language" class="btn">
           <option value="en">English</option>
           <option value="ja">日本語</option>
           <option value="id">Bahasa Indonesia</option>
         </select>
-        <button id="darkToggle" class="ghost pill" aria-pressed="false">🌙 Dark mode</button>
+        <button id="darkToggle" class="btn" aria-pressed="false">🌙 Dark mode</button>
       </div>
-      <div class="control-row">
-        <button id="randomBtn" class="pill">🔀 <span data-i18n="randomize">Randomise board</span> (<span id="rndLeft">3</span>)</button>
-        <button id="startBtn" class="primary pill">▶ <span data-i18n="start">Start Bingo</span></button>
-        <div class="hint" id="preHint">You can shuffle up to 3× before starting.</div>
-      </div>
-      <div class="control-row">
-        <div class="hint" id="howto">Tap a tile to enter a name + a short response. Fill lines to get BINGO!</div>
-      </div>
-    </section>
+    </header>
 
-    <main class="board" id="board" aria-live="polite"></main>
+    <div class="controls" style="padding:8px 16px;">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button id="randomBtn" class="btn">🔀 <span data-i18n="randomize">Randomise board</span> (<span id="rndLeft">3</span>)</button>
+        <button id="startBtn" class="btn primary">▶ <span data-i18n="start">Start Bingo</span></button>
+        <div id="preHint" class="hint">You can shuffle up to 3× before starting.</div>
+      </div>
+      <div style="margin-left:auto;" class="hint" id="howto">Tap a tile to enter a name + a short response. Fill lines to get BINGO!</div>
+    </div>
 
-    <footer class="footer">
-      <div class="hint" id="progress">0/16 filled · 0 bingo lines</div>
-      <div class="hint">Made with ❤️ by your friendly neighbourhood Liam</div>
+    <div class="board-container">
+      <main id="board" class="board" aria-live="polite"></main>
+    </div>
+
+    <footer>
+      <div id="progress">0/16 filled · 0 bingo lines</div>
+      <div>Made with ❤️ by your friendly neighbourhood Liam</div>
     </footer>
   </div>
 
-  <!-- Modal for entering Name + Response on a tile -->
+  <!-- modal -->
   <dialog class="modal" id="entryModal">
-    <form method="dialog" class="inner">
+    <form method="dialog" class="inner" onsubmit="return false;">
       <h3 id="modalTitle">Add a name & response</h3>
-      <div id="modalFact" class="hint"></div>
-      <div class="row">
-        <label id="nameLabel" for="nameInput">Name</label>
-        <input id="nameInput" type="text" placeholder="Type their name" required />
-      </div>
-      <div class="row">
-        <label id="respLabel" for="respInput">Response</label>
-        <textarea id="respInput" placeholder="A few words…" required></textarea>
-      </div>
-      <div class="control-row" style="justify-content: end;">
-        <button value="cancel" class="ghost" id="cancelBtn">Cancel</button>
-        <button value="confirm" class="primary" id="saveBtn">Save</button>
+      <div id="modalFact" class="hint" style="margin-bottom:8px;"></div>
+
+      <label id="nameLabel" for="nameInput">Name</label>
+      <input id="nameInput" type="text" placeholder="Type their name" required style="margin-bottom:8px;" />
+
+      <label id="respLabel" for="respInput">Response</label>
+      <textarea id="respInput" placeholder="A few words…" required></textarea>
+
+      <div class="actions">
+        <button id="cancelBtn" class="btn" value="cancel">Cancel</button>
+        <button id="saveBtn" class="btn primary" value="confirm">Save</button>
       </div>
     </form>
   </dialog>
 
-  <!-- Bingo Overlay (confetti + scalable BINGO!) -->
-  <div class="bingo-overlay" id="bingoOverlay">
-    <div class="bingo-text" id="bingoText">BINGO!</div>
-  </div>
+  <!-- Bingo overlay -->
+  <div class="bingo-overlay" id="bingoOverlay"><div class="bingo-text" id="bingoText">BINGO!</div></div>
 
-  <script>
-    // ============================
-    // Internationalisation (i18n)
-    // ============================
-    const I18N = {
-      en: {
-        ui: {
-          language: 'Language:', dark: 'Dark mode', randomize: 'Randomise board', start: 'Start Bingo', reset: 'Reset Board',
-          prehint: 'You can shuffle up to 3× before starting.', howto: 'Tap a tile to enter a name + a short response. Fill lines to get BINGO!',
-          add: 'Add a name & response', name: 'Name', response: 'Response', cancel: 'Cancel', save: 'Save',
-          filled: (n)=>`${n}/16 filled`, lines: (n)=>`${n} bingo line${n===1?'':'s'}`
-        },
-        // 40 facts; board chooses 16 random unique items per player
-        facts: [
-          '…has worked at the company for over 10 years',
-          '…has a hidden talent they’ve performed publicly',
-          '…has travelled to more than 5 countries',
-          '…speaks more than two languages',
-          '…has met someone famous',
-          '…has run a marathon or completed a major fitness challenge',
-          '…has a pet that’s not a dog or cat',
-          '…has lived in more than three cities',
-          '…has the same birth month as you',
-          '…has worked in a completely different industry before',
-          '…has a side hustle or passion project',
-          '…has been with the company less than 6 months',
-          '…has a unique hobby (e.g., beekeeping, pottery, fencing)',
-          '…has never had coffee',
-          '…has been on TV or radio',
-          '…has a twin or is a twin',
-          '…has gone skydiving or bungee jumping',
-          '…has a tattoo with a story behind it',
-          '…has attended a concert in the last month',
-          '…has read more than 20 books this year',
-          '…has worked remotely from another country',
-          '…has a collection of something unusual',
-          '…has been part of a theatre production',
-          '…has a nickname they still go by',
-          '…has won a competition or award',
-          '…has a favourite podcast they recommend',
-          '…has a bucket list item they’ve completed',
-          '…has a go-to karaoke song',
-          '…can do a celebrity impression on the spot',
-          '…has a weird food combo they love (and will defend)',
-          '…has a pet with a human name',
-          '…has tried an extreme sport (and survived)',
-          '…has been mistaken for someone famous',
-          '…has a viral TikTok or Reel (or knows someone who does)',
-          '…has a favourite emoji they overuse',
-          '…has a favourite conspiracy theory (for fun!)',
-          '…has a favourite fictional character they relate to',
-          '…has a story about a travel fail',
-          '…has a favourite board game or card game',
-          '…has a food they refuse to eat under any circumstance'
-        ]
-      },
-      ja: {
-        ui: {
-          language: '言語：', dark: 'ダークモード', randomize: 'ボードをシャッフル', start: 'ビンゴ開始', reset: 'リセット',
-          prehint: '開始前は最大3回までシャッフルできます。', howto: 'タイルをタップして「名前」と「一言」を入力。列・行・斜めがそろうと BINGO! ',
-          add: '名前と一言を入力', name: '名前', response: '一言メモ', cancel: 'キャンセル', save: '保存',
-          filled: (n)=>`${n}/16 完了`, lines: (n)=>`ビンゴ ${n} ライン`
-        },
-        facts: [
-          '…勤続10年以上の人',
-          '…人前で披露した隠れた特技がある人',
-          '…5カ国以上に旅行したことがある人',
-          '…3言語以上を話せる人',
-          '…有名人に会ったことがある人',
-          '…フルマラソンや大きなフィットネス挑戦を完走した人',
-          '…犬・猫以外のペットを飼っている人',
-          '…3都市以上に住んだことがある人',
-          '…あなたと同じ誕生月の人',
-          '…まったく別業界で働いていたことがある人',
-          '…副業や情熱プロジェクトがある人',
-          '…入社して6か月未満の人',
-          '…珍しい趣味（例：養蜂・陶芸・フェンシング）を持つ人',
-          '…コーヒーを飲んだことがない人',
-          '…テレビやラジオに出たことがある人',
-          '…双子、または双子の兄弟姉妹がいる人',
-          '…スカイダイビングやバンジーをしたことがある人',
-          '…ストーリーのあるタトゥーを入れている人',
-          '…直近1か月でコンサートに行った人',
-          '…今年20冊以上本を読んだ人',
-          '…海外からリモート勤務したことがある人',
-          '…ちょっと変わったコレクションを集めている人',
-          '…舞台や演劇に参加したことがある人',
-          '…今も使っているニックネームがある人',
-          '…コンテストや賞を受賞したことがある人',
-          '…おすすめのお気に入りポッドキャストがある人',
-          '…バケットリストを一つ達成したことがある人',
-          '…定番のカラオケ曲がある人',
-          '…その場で有名人のモノマネができる人',
-          '…大好きな変わり種フードの組み合わせがある人',
-          '…人の名前のようなペットの名前をつけている人',
-          '…エクストリームスポーツに挑戦したことがある人',
-          '…有名人に間違えられたことがある人',
-          '…バズったTikTokやリールがある（または知り合いにいる）人',
-          '…つい使いすぎるお気に入りの絵文字がある人',
-          '…（冗談で）お気に入りの陰謀論がある人',
-          '…共感するお気に入りの架空のキャラクターがいる人',
-          '…旅の失敗談を持っている人',
-          '…お気に入りのボドゲ・トランプゲームがある人',
-          '…絶対に食べない食べ物がある人'
-        ]
-      },
-      id: {
-        ui: {
-          language: 'Bahasa:', dark: 'Mode Gelap', randomize: 'Acak papan', start: 'Mulai Bingo', reset: 'Reset',
-          prehint: 'Sebelum mulai kamu bisa mengacak maksimal 3×.', howto: 'Ketuk ubin lalu isi nama + jawaban singkat. Buat garis untuk BINGO!',
-          add: 'Tambah nama & jawaban', name: 'Nama', response: 'Jawaban singkat', cancel: 'Batal', save: 'Simpan',
-          filled: (n)=>`${n}/16 terisi`, lines: (n)=>`${n} garis bingo`
-        },
-        facts: [
-          '…sudah bekerja di perusahaan >10 tahun',
-          '…punya bakat tersembunyi yang pernah ditampilkan',
-          '…pernah ke lebih dari 5 negara',
-          '…bisa berbicara lebih dari dua bahasa',
-          '…pernah bertemu orang terkenal',
-          '…pernah lari maraton atau tantangan kebugaran besar',
-          '…punya peliharaan selain anjing/kucing',
-          '…pernah tinggal di lebih dari tiga kota',
-          '…punya bulan lahir yang sama denganmu',
-          '…pernah kerja di industri yang sama sekali berbeda',
-          '…punya side hustle atau proyek passion',
-          '…bergabung kurang dari 6 bulan',
-          '…punya hobi unik (contoh: beternak lebah, tembikar, anggar)',
-          '…tidak pernah minum kopi',
-          '…pernah tampil di TV atau radio',
-          '…punya kembaran / adalah anak kembar',
-          '…pernah skydiving atau bungee jumping',
-          '…punya tato dengan cerita di baliknya',
-          '…hadir di konser dalam 1 bulan terakhir',
-          '…sudah baca >20 buku tahun ini',
-          '…pernah kerja jarak jauh dari negara lain',
-          '…mengoleksi sesuatu yang tidak biasa',
-          '…pernah ikut produksi teater',
-          '…punya nama panggilan yang masih dipakai',
-          '…pernah menang kompetisi atau penghargaan',
-          '…punya podcast favorit untuk direkomendasikan',
-          '…sudah menuntaskan salah satu bucket list',
-          '…punya lagu karaoke andalan',
-          '…bisa menirukan selebritas saat itu juga',
-          '…punya kombinasi makanan aneh tapi enak (katanya!)',
-          '…punya hewan peliharaan bernama manusia',
-          '…pernah coba olahraga ekstrem (dan selamat)',
-          '…pernah disangka sebagai orang terkenal',
-          '…punya TikTok/Reel viral (atau kenal yang punya)',
-          '…punya emoji favorit yang sering dipakai',
-          '…punya teori konspirasi favorit (sekadar seru-seruan)',
-          '…punya tokoh fiksi favorit yang related',
-          '…punya cerita gagal saat traveling',
-          '…punya board game/kartu favorit',
-          '…ada makanan yang sama sekali tidak mau dimakan'
-        ]
-      }
-    };
+  <!-- gentle crowd clap -->
+  <audio id="clapAudio" preload="auto" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_b4a41e8d27.mp3?filename=small-crowd-clapping-6695.mp3"></audio>
 
-    // =====================
-    // Icon mapping (40 items)
-    // =====================
-    const ICONS = [
-      { fa: 'fa-briefcase', emoji: '🏢' }, // 1
-      { fa: 'fa-masks-theater', emoji: '🎤' }, // 2 hidden talent performed
-      { fa: 'fa-earth-americas', emoji: '🌍' }, // 3 travelled >5 countries
-      { fa: 'fa-language', emoji: '🗣️' }, // 4 speaks >2 languages
-      { fa: 'fa-star', emoji: '⭐' }, // 5 met someone famous
-      { fa: 'fa-person-running', emoji: '🏃' }, // 6 marathon / fitness
-      { fa: 'fa-paw', emoji: '🦎' }, // 7 non dog/cat pet
-      { fa: 'fa-city', emoji: '🏙️' }, // 8 lived >3 cities
-      { fa: 'fa-cake-candles', emoji: '🎂' }, // 9 same birth month
-      { fa: 'fa-rotate', emoji: '🔄' }, // 10 different industry
-      { fa: 'fa-lightbulb', emoji: '💡' }, // 11 side hustle
-      { fa: 'fa-seedling', emoji: '🆕' }, // 12 <6 months
-      { fa: 'fa-palette', emoji: '🎨' }, // 13 unique hobby
-      { fa: 'fa-mug-saucer', emoji: '🚫☕' }, // 14 never coffee
-      { fa: 'fa-tv', emoji: '📺' }, // 15 TV or radio
-      { fa: 'fa-people-pulling', emoji: '👯' }, // 16 twin (closest available)
-      { fa: 'fa-parachute-box', emoji: '🪂' }, // 17 skydiving/bungee (approx)
-      { fa: 'fa-pen-nib', emoji: '🖋️' }, // 18 tattoo
-      { fa: 'fa-music', emoji: '🎶' }, // 19 concert last month
-      { fa: 'fa-book-open', emoji: '📚' }, // 20 >20 books
-      { fa: 'fa-laptop-house', emoji: '💻' }, // 21 remote from another country
-      { fa: 'fa-box-archive', emoji: '📦' }, // 22 unusual collection
-      { fa: 'fa-masks-theater', emoji: '🎭' }, // 23 theatre production
-      { fa: 'fa-id-badge', emoji: '🏷️' }, // 24 nickname
-      { fa: 'fa-trophy', emoji: '🏆' }, // 25 award
-      { fa: 'fa-podcast', emoji: '🎧' }, // 26 podcast
-      { fa: 'fa-list-check', emoji: '✅' }, // 27 bucket list done
-      { fa: 'fa-microphone', emoji: '🎤' }, // 28 karaoke
-      { fa: 'fa-face-grin-stars', emoji: '😎' }, // 29 celeb impression
-      { fa: 'fa-burger', emoji: '🍕' }, // 30 weird food combo
-      { fa: 'fa-dog', emoji: '🐶' }, // 31 pet with human name
-      { fa: 'fa-person-skiing', emoji: '🏄' }, // 32 extreme sport (approx)
-      { fa: 'fa-user-check', emoji: '👀' }, // 33 mistaken for famous (approx)
-      { fa: 'fa-mobile-screen', emoji: '📱' }, // 34 viral tiktok/reel
-      { fa: 'fa-face-grin', emoji: '😊' }, // 35 favourite emoji
-      { fa: 'fa-user-secret', emoji: '🛸' }, // 36 conspiracy (for fun)
-      { fa: 'fa-hat-wizard', emoji: '🦸' }, // 37 fictional character relate (approx)
-      { fa: 'fa-suitcase-rolling', emoji: '🧳' }, // 38 travel fail
-      { fa: 'fa-chess-board', emoji: '🎲' }, // 39 board/card game
-      { fa: 'fa-ban', emoji: '🚫🍽️' }  // 40 refuse to eat
-    ];
+<script>
+/* ========= I18N & DATA ========= */
+const I18N = {
+  en: {
+    ui: {
+      language:'Language:',
+      dark:'Dark mode',
+      light:'Light mode',
+      randomize:'Randomise board',
+      start:'Start Bingo',
+      reset:'Reset Board',
+      prehint:'You can shuffle up to 3× before starting.',
+      howto:'Tap a tile to enter a name + a short response. Fill lines to get BINGO!',
+      add:'Add a name & response',
+      name:'Name',
+      response:'Response',
+      cancel:'Cancel',
+      save:'Save',
+      filled:(n)=>`${n}/16 filled`,
+      lines:(n)=>`${n} bingo line${n===1?'':'s'}`
+    },
+    facts: [
+      '…has worked at the company for over 10 years',
+      '…has a hidden talent they’ve performed publicly',
+      '…has travelled to more than 5 countries',
+      '…speaks more than two languages',
+      '…has met someone famous',
+      '…has run a marathon or completed a major fitness challenge',
+      '…has a pet that’s not a dog or cat',
+      '…has lived in more than three cities',
+      '…has the same birth month as you',
+      '…has worked in a completely different industry before',
+      '…has a side hustle or passion project',
+      '…has been with the company less than 6 months',
+      '…has a unique hobby (e.g., beekeeping, pottery, fencing)',
+      '…has never had coffee',
+      '…has been on TV or radio',
+      '…has a twin or is a twin',
+      '…has gone skydiving or bungee jumping',
+      '…has a tattoo with a story behind it',
+      '…has attended a concert in the last month',
+      '…has read more than 20 books this year',
+      '…has worked remotely from another country',
+      '…has a collection of something unusual',
+      '…has been part of a theatre production',
+      '…has a nickname they still go by',
+      '…has won a competition or award',
+      '…has a favourite podcast they recommend',
+      '…has a bucket list item they’ve completed',
+      '…has a go-to karaoke song',
+      '…can do a celebrity impression on the spot',
+      '…has a weird food combo they love (and will defend)',
+      '…has a pet with a human name',
+      '…has tried an extreme sport (and survived)',
+      '…has been mistaken for someone famous',
+      '…has a viral TikTok or Reel (or knows someone who does)',
+      '…has a favourite emoji they overuse',
+      '…has a favourite conspiracy theory (for fun!)',
+      '…has a favourite fictional character they relate to',
+      '…has a story about a travel fail',
+      '…has a favourite board game or card game',
+      '…has a food they refuse to eat under any circumstance'
+    ]
+  },
+  ja: {
+    ui: {
+      language:'言語：', dark:'ダークモード', light:'ライトモード', randomize:'ボードをシャッフル', start:'ビンゴ開始', reset:'リセット',
+      prehint:'開始前は最大3回までシャッフルできます。', howto:'タイルをタップして「名前」と「一言」を入力。列・行・斜めがそろうと BINGO!', add:'名前と一言を入力',
+      name:'名前', response:'一言メモ', cancel:'キャンセル', save:'保存',
+      filled:(n)=>`${n}/16 完了`, lines:(n)=>`ビンゴ ${n} ライン`
+    },
+    facts: [
+      '…勤続10年以上の人',
+      '…人前で披露した隠れた特技がある人',
+      '…5カ国以上に旅行したことがある人',
+      '…2言語以上を話せる人',
+      '…有名人に会ったことがある人',
+      '…フルマラソンや大きな運動チャレンジを達成した人',
+      '…犬や猫以外のペットがいる人',
+      '…3都市以上に住んだことがある人',
+      '…あなたと同じ誕生月の人',
+      '…全く違う業界で働いたことがある人',
+      '…副業や情熱的に取り組むプロジェクトがある人',
+      '…入社6カ月未満の人',
+      '…ユニークな趣味（例：養蜂、陶芸、フェンシング）を持つ人',
+      '…コーヒーを飲んだことがない人',
+      '…テレビやラジオに出たことがある人',
+      '…双子、または双子の兄弟姉妹がいる人',
+      '…スカイダイビングやバンジージャンプをしたことがある人',
+      '…物語のあるタトゥーがある人',
+      '…過去1カ月でコンサートに行った人',
+      '…今年20冊以上本を読んだ人',
+      '…海外でリモートワークをしたことがある人',
+      '…珍しいコレクションを集めている人',
+      '…演劇に参加したことがある人',
+      '…今も使っているニックネームがある人',
+      '…コンテストや賞を受賞したことがある人',
+      '…おすすめのポッドキャストがある人',
+      '…バケットリストを達成したことがある人',
+      '…カラオケの十八番がある人',
+      '…有名人のモノマネができる人',
+      '…変わった食べ合わせが好きな人（そして譲らない）',
+      '…人間の名前のペットがいる人',
+      '…エクストリームスポーツをしたことがある人（生還済み）',
+      '…有名人に間違えられたことがある人',
+      '…バズったTikTok/リールがある（もしくは知り合いにいる）',
+      '…つい多用してしまうお気に入りの絵文字がある人',
+      '…（娯楽として）お気に入りの陰謀論がある人',
+      '…共感するお気に入りの架空のキャラクターがいる人',
+      '…旅の失敗談がある人',
+      '…お気に入りのボドゲ・トランプゲームがある人',
+      '…絶対に食べない食べ物がある人'
+    ]
+  },
+  id: {
+    ui: {
+      language:'Bahasa:', dark:'Mode Gelap', light:'Mode Terang', randomize:'Acak papan', start:'Mulai Bingo', reset:'Reset',
+      prehint:'Sebelum mulai kamu bisa mengacak maksimal 3×.', howto:'Ketuk ubin lalu isi nama + jawaban singkat. Buat garis untuk BINGO!', add:'Tambah nama & jawaban',
+      name:'Nama', response:'Jawaban singkat', cancel:'Batal', save:'Simpan',
+      filled:(n)=>`${n}/16 terisi`, lines:(n)=>`${n} garis bingo`
+    },
+    facts: [
+      '…sudah bekerja di perusahaan lebih dari 10 tahun',
+      '…punya bakat tersembunyi yang pernah ditampilkan',
+      '…pernah ke lebih dari 5 negara',
+      '…bisa berbicara lebih dari dua bahasa',
+      '…pernah bertemu orang terkenal',
+      '…pernah ikut marathon atau tantangan kebugaran besar',
+      '…punya hewan peliharaan selain anjing/kucing',
+      '…pernah tinggal di lebih dari tiga kota',
+      '…punya bulan lahir yang sama denganmu',
+      '…pernah bekerja di industri yang berbeda sama sekali',
+      '…punya usaha sampingan atau proyek passion',
+      '…bergabung kurang dari 6 bulan',
+      '…punya hobi unik (mis. beternak lebah, tembikar, anggar)',
+      '…tidak pernah minum kopi',
+      '…pernah tampil di TV atau radio',
+      '…punya saudara kembar atau dia kembar',
+      '…pernah skydiving atau bungee jumping',
+      '…punya tato dengan cerita di baliknya',
+      '…pernah nonton konser bulan lalu',
+      '…tahun ini baca lebih dari 20 buku',
+      '…pernah kerja jarak jauh dari negara lain',
+      '…punya koleksi yang tidak biasa',
+      '…pernah ikut produksi teater',
+      '…punya nama panggilan yang masih dipakai',
+      '…pernah menang kompetisi atau mendapat penghargaan',
+      '…punya podcast favorit yang direkomendasikan',
+      '…pernah menuntaskan item di bucket list',
+      '…punya lagu andalan saat karaoke',
+      '…bisa menirukan selebriti dengan cepat',
+      '…punya kombinasi makanan aneh yang disukai (dan dibela)',
+      '…punya hewan peliharaan dengan nama manusia',
+      '…pernah mencoba olahraga ekstrem (dan selamat)',
+      '…pernah dikira orang terkenal',
+      '…punya TikTok atau Reel viral (atau kenal yang punya)',
+      '…punya emoji favorit yang sering dipakai',
+      '…punya teori konspirasi favorit (hanya untuk bersenang-senang)',
+      '…punya karakter fiksi favorit yang dirasa mirip dengan dirinya',
+      '…punya cerita gagal saat bepergian',
+      '…punya board game atau permainan kartu favorit',
+      '…ada makanan yang sama sekali tidak mau dimakan'
+    ]
+  }
+};
 
-    // Pre-build emoji array for convenience (same order as ICONS)
-    const EMOJI_FALLBACK = ICONS.map(x => x.emoji);
+/* icons — one per question */
+const ICONS = [
+  { fa:'fa-briefcase', emoji:'🏢' }, { fa:'fa-masks-theater', emoji:'🎤' }, { fa:'fa-earth-americas', emoji:'🌍' },
+  { fa:'fa-language', emoji:'🗣️' }, { fa:'fa-star', emoji:'⭐' }, { fa:'fa-person-running', emoji:'🏃' },
+  { fa:'fa-paw', emoji:'🦎' }, { fa:'fa-city', emoji:'🏙️' }, { fa:'fa-cake-candles', emoji:'🎂' },
+  { fa:'fa-rotate', emoji:'🔄' }, { fa:'fa-lightbulb', emoji:'💡' }, { fa:'fa-seedling', emoji:'🆕' },
+  { fa:'fa-palette', emoji:'🎨' }, { fa:'fa-mug-saucer', emoji:'🚫☕' }, { fa:'fa-tv', emoji:'📺' },
+  { fa:'fa-people-arrows', emoji:'👯' }, { fa:'fa-parachute-box', emoji:'🪂' }, { fa:'fa-pen-nib', emoji:'🖋️' },
+  { fa:'fa-music', emoji:'🎶' }, { fa:'fa-book-open', emoji:'📚' }, { fa:'fa-laptop-house', emoji:'💻' },
+  { fa:'fa-box-archive', emoji:'📦' }, { fa:'fa-masks-theater', emoji:'🎭' }, { fa:'fa-id-badge', emoji:'🏷️' },
+  { fa:'fa-trophy', emoji:'🏆' }, { fa:'fa-podcast', emoji:'🎧' }, { fa:'fa-list-check', emoji:'✅' },
+  { fa:'fa-microphone', emoji:'🎤' }, { fa:'fa-face-grin-stars', emoji:'😎' }, { fa:'fa-burger', emoji:'🍕' },
+  { fa:'fa-dog', emoji:'🐶' }, { fa:'fa-person-skiing', emoji:'🏄' }, { fa:'fa-user-check', emoji:'👀' },
+  { fa:'fa-mobile-screen', emoji:'📱' }, { fa:'fa-face-grin', emoji:'😊' }, { fa:'fa-user-secret', emoji:'🛸' },
+  { fa:'fa-hat-wizard', emoji:'🦸' }, { fa:'fa-suitcase-rolling', emoji:'🧳' }, { fa:'fa-chess-board', emoji:'🎲' },
+  { fa:'fa-ban', emoji:'🚫🍽️' }
+];
 
-    // =====================
-    // Element references
-    // =====================
-    const boardEl = document.getElementById('board');
-    const randomBtn = document.getElementById('randomBtn');
-    const startBtn  = document.getElementById('startBtn');
-    const rndLeftEl = document.getElementById('rndLeft');
-    const progressEl = document.getElementById('progress');
-    const darkToggle = document.getElementById('darkToggle');
-    const darkTag = document.getElementById('darkTag');
+/* Element refs */
+const boardEl = document.getElementById('board');
+const randomBtn = document.getElementById('randomBtn');
+const startBtn = document.getElementById('startBtn');
+const rndLeftEl = document.getElementById('rndLeft');
+const progressEl = document.getElementById('progress');
+const darkToggle = document.getElementById('darkToggle');
+const langSel = document.getElementById('langSel');
+const preHint = document.getElementById('preHint');
+const howto = document.getElementById('howto');
+const entryModal = document.getElementById('entryModal');
+const nameInput = document.getElementById('nameInput');
+const respInput = document.getElementById('respInput');
+const modalFact = document.getElementById('modalFact');
+const modalTitle = document.getElementById('modalTitle');
+const cancelBtn = document.getElementById('cancelBtn');
+const saveBtn = document.getElementById('saveBtn');
+const bingoOverlay = document.getElementById('bingoOverlay');
+const bingoText = document.getElementById('bingoText');
+const clapAudio = document.getElementById('clapAudio');
 
-    const modal = document.getElementById('entryModal');
-    const nameInput = document.getElementById('nameInput');
-    const respInput = document.getElementById('respInput');
-    const modalFact = document.getElementById('modalFact');
-    const modalTitle = document.getElementById('modalTitle');
-    const nameLabel = document.getElementById('nameLabel');
-    const respLabel = document.getElementById('respLabel');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const saveBtn = document.getElementById('saveBtn');
+/* App state */
+let state = {
+  lang: localStorage.getItem('wtaf-lang') || 'en',
+  grid: [],
+  answers: {},
+  started: false,
+  randomLeft: 3,
+  completedLines: new Set(),
+  bingoScale: 1
+};
 
-    const overlay = document.getElementById('bingoOverlay');
-    const bingoText = document.getElementById('bingoText');
-
-    const langSel = document.getElementById('langSel');
-    const langLabel = document.getElementById('langLabel');
-
-    const i18nEls = document.querySelectorAll('[data-i18n]');
-    const preHint = document.getElementById('preHint');
-    const howto = document.getElementById('howto');
-
-    // =============
-    // App state
-    // =============
-    /*
-      completedLines uses a Set. When storing to localStorage we stringify it as an array
-      and revive back to Set on load to avoid "has is not a function" errors.
-    */
-    let state = {
-      lang: localStorage.getItem('wtaf-lang') || 'en',
-      grid: [],            // 16 picked indices into facts
-      answers: {},         // idx -> {name, resp}
-      started: false,
-      randomLeft: 3,
-      completedLines: new Set(),
-      bingoScale: 1
-    };
-
-    // ---------- Persist/Revive helpers for Set ----------
-    function toSavableState(s){
-      const copy = {...s};
-      copy.completedLines = Array.from(s.completedLines || []);
-      return copy;
+/* Persistence helpers (serialize Set) */
+function toSavableState(s){
+  const copy = {...s};
+  copy.completedLines = Array.from(s.completedLines || []);
+  return copy;
+}
+function fromSavedState(s){
+  if (!s) return null;
+  const revived = {...s};
+  revived.completedLines = new Set(Array.isArray(s.completedLines) ? s.completedLines : []);
+  return revived;
+}
+function saveState(){
+  try{
+    localStorage.setItem('wtaf-state', JSON.stringify(toSavableState(state)));
+    localStorage.setItem('wtaf-lang', state.lang);
+  }catch(e){ console.warn('save failed', e); }
+}
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem('wtaf-state'));
+    const revived = fromSavedState(s);
+    if (revived && Array.isArray(revived.grid) && revived.grid.length===16){
+      state = {...state, ...revived};
     }
-    function fromSavedState(s){
-      if (!s) return null;
-      const revived = {...s};
-      revived.completedLines = new Set(Array.isArray(s.completedLines) ? s.completedLines : []);
-      return revived;
-    }
+  }catch(e){ /* ignore */ }
+}
 
-    function saveState(){
-      localStorage.setItem('wtaf-state', JSON.stringify(toSavableState(state)));
-      localStorage.setItem('wtaf-lang', state.lang);
-    }
-    function loadState(){
-      try {
-        const s = JSON.parse(localStorage.getItem('wtaf-state'));
-        const revived = fromSavedState(s);
-        if (revived && Array.isArray(revived.grid) && revived.grid.length===16) {
-          state = {...state, ...revived};
-        }
-      } catch(e){ /* ignore */ }
-    }
+/* i18n apply */
+function applyLang(){
+  langSel.value = state.lang;
+  preHint.textContent = (I18N[state.lang] && I18N[state.lang].ui && I18N[state.lang].ui.prehint) || I18N.en.ui.prehint;
+  howto.textContent = (I18N[state.lang] && I18N[state.lang].ui && I18N[state.lang].ui.howto) || I18N.en.ui.howto;
+  modalTitle.textContent = (I18N[state.lang] && I18N[state.lang].ui && I18N[state.lang].ui.add) || I18N.en.ui.add;
+  renderBoard();
+  updateProgress();
+  saveState();
+  updateDarkToggleLabel(); // update label when language or theme changes
+}
 
-    // -------------- i18n application --------------
-    function applyLang(){
-      langSel.value = state.lang;
-      langLabel.textContent = I18N[state.lang].ui.language;
-      darkToggle.textContent = (state.lang==='ja'?'🌙 ダークモード': state.lang==='id'?'🌙 Mode Gelap':'🌙 Dark mode');
-      preHint.textContent = I18N[state.lang].ui.prehint;
-      howto.textContent = I18N[state.lang].ui.howto;
-      modalTitle.textContent = I18N[state.lang].ui.add;
-      nameLabel.textContent = I18N[state.lang].ui.name;
-      respLabel.textContent = I18N[state.lang].ui.response;
-      cancelBtn.textContent = I18N[state.lang].ui.cancel;
-      saveBtn.textContent = I18N[state.lang].ui.save;
-      i18nEls.forEach(el => el.textContent = I18N[state.lang].ui[el.dataset.i18n]);
-      renderBoard();
-      updateProgress();
-      saveState();
-    }
+/* Utility helpers */
+function shuffleArray(a){
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function safeEscape(str){
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>\"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[s]));
+}
 
-    // -------------- Utility --------------
-    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+/* Board logic */
+function randomiseGrid(){
+  const total = I18N.en.facts.length;
+  const indices = [...Array(total).keys()];
+  shuffleArray(indices);
+  state.grid = indices.slice(0,16);
+  state.answers = {};
+  if (!(state.completedLines instanceof Set)) state.completedLines = new Set();
+  state.completedLines.clear();
+  state.bingoScale = 1;
+  renderBoard(); updateProgress(); saveState();
+}
 
-    // Create a fresh 4x4 board by sampling 16 unique indices from 40 facts
-    function randomiseGrid(){
-      const indices = [...Array(40).keys()];
-      shuffle(indices);
-      state.grid = indices.slice(0,16);
-      state.answers = {}; // reset any filled names/responses
-      if (!(state.completedLines instanceof Set)) state.completedLines = new Set();
-      state.completedLines.clear();
-      state.bingoScale = 1; // reset bingo scale so first bingo is base size
-      renderBoard();
-      updateProgress();
-      saveState();
-    }
+function tileTextByIndex(idx){
+  const facts = (I18N[state.lang] && I18N[state.lang].facts) ? I18N[state.lang].facts : I18N.en.facts;
+  return facts && facts[state.grid[idx]] ? String(facts[state.grid[idx]]) : '';
+}
+function tileIconByIndex(idx){
+  const factIdx = state.grid[idx];
+  return ICONS[factIdx] || { fa:'fa-circle-question', emoji:'❓' };
+}
 
-    function tileTextByIndex(idx){
-      return I18N[state.lang].facts[state.grid[idx]];
-    }
-    function tileIconByIndex(idx){
-      const factIdx = state.grid[idx];
-      return ICONS[factIdx] || { fa: 'fa-circle-question', emoji: '❓' };
-    }
+function renderBoard(){
+  if (!Array.isArray(state.grid) || state.grid.length !== 16){
+    randomiseGrid();
+    return;
+  }
+  boardEl.innerHTML = '';
+  for (let i=0;i<16;i++){
+    const fact = tileTextByIndex(i);
+    const icon = tileIconByIndex(i);
+    const entry = state.answers[i];
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'tile';
+    tile.dataset.index = i;
 
-    // ------------------ Board rendering ------------------
-    function renderBoard(){
-      // defensive: ensure grid is at most 16 long
-      if (!Array.isArray(state.grid) || state.grid.length !== 16) {
-        // create a fresh grid if invalid
-        randomiseGrid();
-        return; // randomiseGrid will call renderBoard when ready
-      }
+    tile.innerHTML = `
+      <i class="fa-solid ${icon.fa} fa-icon" aria-hidden="true"></i>
+      <span class="emoji-fallback" aria-hidden="true">${icon.emoji}</span>
+      <div class="fact">${safeEscape(fact)}</div>
+      <div class="meta">
+        <span class="who">${ entry ? safeEscape(entry.name) : '' }</span>
+      </div>
+      ${ entry ? `<div class="entry"><div class="resp">${safeEscape(entry.resp)}</div></div>` : '' }
+    `;
 
-      boardEl.innerHTML = '';
+    if (entry) tile.classList.add('filled');
+    tile.addEventListener('click', ()=> onTileClick(i, fact));
+    boardEl.appendChild(tile);
+  }
+  detectFontAwesome();
+}
 
-      // Use the actual grid length (defensive) — this prevents accidental duplication
-      const count = Math.min(16, state.grid.length);
-      for (let idx=0; idx<count; idx++){
-        const text = tileTextByIndex(idx);
-        const icon = tileIconByIndex(idx);
-        const tile = document.createElement('button');
-        tile.className = 'tile';
-        tile.setAttribute('data-index', idx);
-        const entry = state.answers[idx];
+/* Modal handling */
+let currentIdx = null;
+function onTileClick(idx, fact){
+  if (!state.started) return;
+  currentIdx = idx;
+  modalFact.textContent = fact;
+  nameInput.value = state.answers[idx]?.name || '';
+  respInput.value = state.answers[idx]?.resp || '';
+  try { entryModal.showModal(); } catch(e){ entryModal.setAttribute('open',''); }
+  setTimeout(()=> nameInput.focus(), 50);
+}
 
-        // NOTE (requested change): show ONLY one Name — next to the arrow in the meta line.
-        // Inside the details area we now show only the Response (no duplicate Name).
-        tile.innerHTML = `
-          <i class="fa-solid ${icon.fa} fa-icon" aria-hidden="true"></i>
-          <span class="emoji-fallback" aria-hidden="true">${icon.emoji}</span>
-          <div class="fact">${text}</div>
-          <div class="meta">
-            <span class="check" style="display:${entry? 'inline-flex':'none'}">✓</span>
-            <span class="who" title="name">${entry ? '' + escapeHtml(entry.name) : ''}</span>
-          </div>
-          ${entry ? `<div class="entry"><div class="resp">${escapeHtml(entry.resp)}</div></div>` : ''}
-        `;
+saveBtn.addEventListener('click', (e)=>{
+  e.preventDefault();
+  const name = nameInput.value.trim();
+  const resp = respInput.value.trim();
+  if (!name || !resp) return;
+  state.answers[currentIdx] = { name, resp };
+  try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); }
+  renderBoard();
+  checkForNewBingo();
+  updateProgress();
+  saveState();
+});
+cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); } });
 
-        if (entry) tile.classList.add('filled');
-        tile.addEventListener('click', ()=> onTileClick(idx, text));
-        boardEl.appendChild(tile);
-      }
-      // After rendering, detect whether Font Awesome actually loaded to toggle FA/emoji
-      detectFontAwesome();
-    }
+/* Bingo detection */
+function calculateBingoLines(){
+  const filled = new Set(Object.keys(state.answers).map(Number));
+  const lines = [];
+  for (let r=0;r<4;r++) lines.push([0,1,2,3].map(c=>r*4+c));
+  for (let c=0;c<4;c++) lines.push([0,1,2,3].map(r=>r*4+c));
+  lines.push([0,5,10,15]); lines.push([3,6,9,12]);
+  const completed = new Set();
+  lines.forEach((l,i)=> { if (l.every(x => filled.has(x))) completed.add(i); });
+  return completed;
+}
+function updateProgress(){
+  const filled = Object.keys(state.answers).length;
+  const lines = calculateBingoLines();
+  progressEl.textContent = `${I18N[state.lang].ui.filled(filled)} · ${I18N[state.lang].ui.lines(lines.size)}`;
+}
 
-    // Escape user text to avoid XSS
-    function escapeHtml(str){
-      return str.replace(/[&<>\"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[s]));
-    }
+/* Celebrate new bingos */
+function checkForNewBingo(){
+  const now = calculateBingoLines();
+  const prev = (state.completedLines instanceof Set) ? state.completedLines : new Set();
+  const newOnes = [...now].filter(i=>!prev.has(i));
+  if (newOnes.length){
+    state.completedLines = now;
+    state.bingoScale *= 1.5;
+    playClapSound();
+    showBingo();
+  }
+  updateProgress();
+  saveState();
+}
 
-    // ------------------ Modal interaction ------------------
-    let currentIdx = null; // the tile index currently being edited
-    function onTileClick(idx, text){
-      if (!state.started) return; // tiles become editable only after Start
-      currentIdx = idx;
-      modalFact.textContent = text;
-      nameInput.value = state.answers[idx]?.name || '';
-      respInput.value = state.answers[idx]?.resp || '';
-      // Some mobile browsers throw on showModal; fall back to open attribute.
-      try { modal.showModal(); } catch(e){ modal.setAttribute('open',''); }
-      setTimeout(()=>nameInput.focus(), 50);
-    }
+/* Confetti + overlay */
+function showBingo(){
+  bingoOverlay.classList.add('show');
+  bingoText.style.transform = `scale(${state.bingoScale})`;
+  bingoText.textContent = 'BINGO!';
+  const duration = 1200; const end = Date.now() + duration;
+  (function frame(){
+    confetti({ particleCount: 6, spread: 60, startVelocity: 32, origin: { x: Math.random(), y: Math.random()*0.35 }});
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+}
+bingoOverlay.addEventListener('click', ()=> bingoOverlay.classList.remove('show'));
 
-    // Update the progress text ("x/16 filled · y bingo lines")
-    function updateProgress(){
-      const filled = Object.keys(state.answers).length;
-      const lines = calculateBingoLines();
-      progressEl.textContent = `${I18N[state.lang].ui.filled(filled)} · ${I18N[state.lang].ui.lines(lines.size)}`;
-    }
+/* Audio: gentle crowd clap */
+let audioCtx = null, unlocked = false;
+function resumeAudio(){ if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); unlocked = true; }
+window.addEventListener('pointerdown', resumeAudio, { once:true });
 
-    // Compute all completed lines as a Set of line indices (0..9)
-    function calculateBingoLines(){
-      const filled = new Set(Object.keys(state.answers).map(Number));
-      const lines = [];
-      for (let r=0;r<4;r++){ lines.push([0,1,2,3].map(c=>r*4+c)); } // rows
-      for (let c=0;c<4;c++){ lines.push([0,1,2,3].map(r=>r*4+c)); } // columns
-      lines.push([0,5,10,15]); // diag TL→BR
-      lines.push([3,6,9,12]); // diag TR→BL
-      const completed = new Set();
-      lines.forEach((l,i)=>{ if(l.every(x=>filled.has(x))) completed.add(i); });
-      return completed;
-    }
+function playClapSound(){
+  if (clapAudio && typeof clapAudio.play === 'function'){
+    try { clapAudio.volume = 0.28; clapAudio.currentTime = 0; clapAudio.play().catch(()=>{}); } catch(e){}
+    return;
+  }
+  if (!unlocked) return;
+  const master = audioCtx.createGain(); master.gain.value = 0.2; master.connect(audioCtx.destination);
+  for (let i=0;i<6;i++){
+    const t = audioCtx.currentTime + i*0.08; const dur = 0.18;
+    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let k=0;k<data.length;k++) data[k] = (Math.random()*2-1) * Math.pow(1 - k/data.length, 2);
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const hp = audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 1600;
+    const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(1, t+0.01); g.gain.exponentialRampToValueAtTime(0.00001, t+0.16);
+    src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+dur);
+  }
+}
 
-    // If there are newly completed lines since last check, celebrate
-    function checkForNewBingo(){
-      const now = calculateBingoLines();
-      const prev = (state.completedLines instanceof Set) ? state.completedLines : new Set();
-      const newOnes = [...now].filter(i=>!prev.has(i));
-      if (newOnes.length){
-        state.completedLines = now;
-        state.bingoScale *= 1.5; // 50% bigger each new BINGO
-        playCrowdClap();         // gentle crowd clapping sound
-        showBingo();             // confetti + overlay
-      }
-      updateProgress();
-      saveState();
-    }
+/* Detect Font Awesome */
+function detectFontAwesome(){ try{ if (document.fonts && document.fonts.check("1em 'Font Awesome 6 Free'")) document.body.classList.add('fa-loaded'); else document.body.classList.remove('fa-loaded'); } catch(e){ document.body.classList.remove('fa-loaded'); } }
 
-    // Display scalable BINGO text + a short confetti burst; tap overlay to dismiss
-    function showBingo(){
-      overlay.classList.add('show');
-      bingoText.style.transform = `scale(${state.bingoScale})`;
-      bingoText.textContent = 'BINGO!';
-      const duration = 1200;
-      const end = Date.now() + duration;
-      (function frame(){
-        confetti({particleCount: 4, spread: 60, startVelocity: 28, origin: { x: Math.random(), y: Math.random()*0.3 }});
-        if (Date.now() < end) requestAnimationFrame(frame);
-      })();
-    }
-    overlay.addEventListener('click', ()=> overlay.classList.remove('show'));
+/* ---------------------------
+   Dark/Light toggle label helper
+   --------------------------- */
+function updateDarkToggleLabel() {
+  const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
+  if (document.body.classList.contains('dark')) {
+    // show Light mode with sun emoji
+    darkToggle.textContent = `☀ ${ui.light || 'Light mode'}`;
+  } else {
+    // show Dark mode with moon emoji
+    darkToggle.textContent = `🌙 ${ui.dark || 'Dark mode'}`;
+  }
+}
 
-    // ------------------ Controls wiring ------------------
-    randomBtn.addEventListener('click', ()=>{
-      if (state.started) return;          // randomize disabled once the game starts
-      if (state.randomLeft<=0) return;    // maximum 3 shuffles
-      state.randomLeft--; rndLeftEl.textContent = state.randomLeft;
-      randomiseGrid();
-    });
+/* Controls wiring */
+randomBtn.addEventListener('click', ()=>{
+  if (state.started) return;
+  if (state.randomLeft <= 0) return;
+  state.randomLeft--; rndLeftEl.textContent = state.randomLeft;
+  randomiseGrid();
+});
 
-    startBtn.addEventListener('click', ()=>{
-      if (!state.started) {
-        // Transition to started mode: lock randomize, change button to Reset, hide hint
-        state.started = true; saveState();
-        document.getElementById('preHint').style.display='none';
-        startBtn.classList.remove('primary');
-        startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`;
-        randomBtn.disabled = true;
-        resumeAudio(); // prime WebAudio so we can play claps later
-      } else {
-        // Reset board: clear answers, bingos, scale; re-enable randomize and shuffle count
-        state.started = false;
-        state.answers = {};
-        state.completedLines = new Set();
-        state.bingoScale = 1;
-        state.randomLeft = 3; rndLeftEl.textContent = '3';
-        startBtn.classList.add('primary');
-        startBtn.innerHTML = `▶ ${I18N[state.lang].ui.start}`;
-        randomBtn.disabled = false;
-        renderBoard();
-        updateProgress();
-        saveState();
-      }
-    });
+startBtn.addEventListener('click', ()=>{
+  if (!state.started){
+    state.started = true; saveState();
+    preHint.style.display = 'none';
+    startBtn.classList.remove('primary');
+    startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`;
+    randomBtn.disabled = true;
+    resumeAudio();
+  } else {
+    // Reset
+    state.started = false; state.answers = {}; state.completedLines = new Set(); state.bingoScale = 1;
+    state.randomLeft = 3; rndLeftEl.textContent = '3';
+    startBtn.classList.add('primary'); startBtn.innerHTML = `▶ ${I18N[state.lang].ui.start}`;
+    randomBtn.disabled = false;
+    renderBoard(); updateProgress(); saveState();
+  }
+});
 
-    darkToggle.addEventListener('click', ()=>{
-      document.body.classList.toggle('dark');
-      const on = document.body.classList.contains('dark');
-      darkToggle.setAttribute('aria-pressed', on?'true':'false');
-      darkTag.textContent = on? '☾ Dark' : '☼ Light';
-      localStorage.setItem('wtaf-dark', on?'1':'0');
-    });
+darkToggle.addEventListener('click', ()=>{
+  document.body.classList.toggle('dark');
+  darkToggle.setAttribute('aria-pressed', document.body.classList.contains('dark') ? 'true' : 'false');
+  localStorage.setItem('wtaf-dark', document.body.classList.contains('dark') ? '1':'0');
+  updateDarkToggleLabel();
+});
 
-    langSel.addEventListener('change', ()=>{ state.lang = langSel.value; applyLang(); });
+langSel.addEventListener('change', ()=>{ state.lang = langSel.value; applyLang(); });
 
-    // Modal buttons
-    saveBtn.addEventListener('click', (e)=>{
-      e.preventDefault();
-      const name = nameInput.value.trim();
-      const resp = respInput.value.trim();
-      if (!name || !resp) return; // both required
-      state.answers[currentIdx] = {name, resp};
-      try { modal.close(); } catch(e){ modal.removeAttribute('open'); }
-      renderBoard();
-      checkForNewBingo();
-    });
-    cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); try { modal.close(); } catch(e2){ modal.removeAttribute('open'); } });
+/* Boot */
+loadState();
+document.body.classList.toggle('dark', localStorage.getItem('wtaf-dark') === '1');
+rndLeftEl.textContent = state.randomLeft;
+applyLang();
 
-    // ================================
-    // Celebration sound: crowd clapping
-    // ================================
-    let audioCtx = null; let unlocked = false;
-    function resumeAudio(){
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      unlocked = true;
-    }
-    window.addEventListener('pointerdown', resumeAudio, { once: true });
+if (state.started){
+  startBtn.classList.remove('primary');
+  startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`;
+  randomBtn.disabled = true;
+}
 
-    function noiseBuffer(){
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate*1.5, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for(let i=0;i<data.length;i++){ data[i] = Math.random()*2-1; }
-      return buffer;
-    }
-    function playCrowdClap(){
-      if (!unlocked) return; // respect autoplay policies
-      const master = audioCtx.createGain();
-      master.gain.value = 0.25; // gentle volume
-      master.connect(audioCtx.destination);
-      for(let i=0;i<7;i++){
-        const t = audioCtx.currentTime + i*0.09;
-        const src = audioCtx.createBufferSource(); src.buffer = noiseBuffer();
-        const hp = audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1800;
-        const g = audioCtx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t+0.012); g.gain.exponentialRampToValueAtTime(0.0001, t+0.14);
-        src.connect(hp).connect(g).connect(master);
-        src.start(t); src.stop(t+0.22);
-      }
-    }
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(detectFontAwesome); else setTimeout(detectFontAwesome, 400);
 
-    // ====================
-    // Font Awesome detect
-    // ====================
-    function detectFontAwesome(){
-      try {
-        if (document.fonts && document.fonts.check("1em 'Font Awesome 6 Free'")) {
-          document.body.classList.add('fa-loaded');
-        } else {
-          document.body.classList.remove('fa-loaded');
-        }
-      } catch(e) {
-        document.body.classList.remove('fa-loaded');
-      }
-    }
+/* Small runtime self-tests in console */
+(function runSelfTests(){
+  console.groupCollapsed('WTFAY self-tests');
+  const temp = { completedLines: new Set([1,2,7]) };
+  const s = JSON.stringify(toSavableState(temp));
+  const r = fromSavedState(JSON.parse(s));
+  console.assert(r.completedLines instanceof Set, 'completedLines revived to Set');
+  console.assert(r.completedLines.has(7), 'revived set contains 7');
 
-    // ====================
-    // Boot sequence
-    // ====================
-    loadState();
-    document.body.classList.toggle('dark', localStorage.getItem('wtaf-dark')==='1');
-    rndLeftEl.textContent = state.randomLeft;
-    applyLang();
-    if (state.started) { // recover UI state after refresh
-      startBtn.classList.remove('primary');
-      startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`;
-      randomBtn.disabled = true;
-    }
-
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(detectFontAwesome);
-    } else {
-      setTimeout(detectFontAwesome, 500);
-    }
-
-    // ========================================================
-    // Runtime tests (in console) to catch common regressions
-    // ========================================================
-    (function runTests(){
-      console.groupCollapsed('WhoTheFact – runtime tests');
-      const tempState = { completedLines: new Set([1,2,7]) };
-      const saved = JSON.stringify(toSavableState(tempState));
-      const revived = fromSavedState(JSON.parse(saved));
-      console.assert(revived.completedLines instanceof Set, 'completedLines should revive to Set');
-      console.assert(revived.completedLines.has(7), 'revived set should contain 7');
-
-      function bingoLinesFromAnswers(answers){
-        const filled = new Set(Object.keys(answers).map(Number));
-        const lines = [];
-        for (let r=0;r<4;r++){ lines.push([0,1,2,3].map(c=>r*4+c)); }
-        for (let c=0;c<4;c++){ lines.push([0,1,2,3].map(r=>r*4+c)); }
-        lines.push([0,5,10,15]);
-        lines.push([3,6,9,12]);
-        const completed = new Set();
-        lines.forEach((l,i)=>{ if(l.every(x=>filled.has(x))) completed.add(i); });
-        return completed;
-      }
-      // Test 2: Row bingo
-      const row = {0:{},1:{},2:{},3:{}};
-      console.assert(bingoLinesFromAnswers(row).size===1, 'row should be 1 bingo');
-      // Test 3: Column bingo
-      const col = {0:{},4:{},8:{},12:{}};
-      console.assert(bingoLinesFromAnswers(col).size===1, 'column should be 1 bingo');
-      // Test 4: Diagonal bingo
-      const diag = {0:{},5:{},10:{},15:{}};
-      console.assert(bingoLinesFromAnswers(diag).size===1, 'diagonal should be 1 bingo');
-      // Test 5: Two lines (row + column share cell 0)
-      const two = {0:{},1:{},2:{},3:{},4:{},8:{},12:{}};
-      console.assert(bingoLinesFromAnswers(two).size===2, 'two lines should be 2 bingos');
-      console.groupEnd();
-    })();
-  </script>
+  function bingoLinesFromAnswers(answers){
+    const filled = new Set(Object.keys(answers).map(Number));
+    const lines = [];
+    for (let r=0;r<4;r++) lines.push([0,1,2,3].map(c=>r*4+c));
+    for (let c=0;c<4;c++) lines.push([0,1,2,3].map(r=>r*4+c));
+    lines.push([0,5,10,15]); lines.push([3,6,9,12]);
+    const completed = new Set();
+    lines.forEach((l,i)=>{ if (l.every(x=>filled.has(x))) completed.add(i); });
+    return completed;
+  }
+  console.assert(bingoLinesFromAnswers({0:{},1:{},2:{},3:{}}).size===1,'row bingo');
+  console.assert(bingoLinesFromAnswers({0:{},4:{},8:{},12:{}}).size===1,'column bingo');
+  console.assert(bingoLinesFromAnswers({0:{},5:{},10:{},15:{}}).size===1,'diag bingo');
+  console.groupEnd();
+})();
+</script>
 </body>
 </html>
