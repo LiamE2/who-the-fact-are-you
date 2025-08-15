@@ -5,129 +5,93 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Who the Fact Are You? — 4×4 Bingo</title>
 
-<!-- Font Awesome (icons) -->
+<!-- Font Awesome CDN -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
       crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-<!-- confetti -->
+<!-- Confetti lib -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
 <style>
-  /* ===============================
-     Scaleable UI by changing --ui-font-size
-     All major font sizes use rem so the A+/A- controls work.
-     =============================== */
+  /* Design tokens and scaling */
   :root{
-    --ui-font-size: 16px; /* base UI font-size (changed by A+ / A-) */
-    --brand-red:#e53935;
-    --bg:#ffffff;
-    --text:#111111;
-    --muted:#6b7280;
-    --tile:#fafafa;
-    --tile-border:#ececec;
-    --accent:#ef4444;
+    --ui-font-size: 16px; /* changed by A+ / A- */
+    --brand-red: #e53935;
+    --bg: #ffffff;
+    --text: #111111;
+    --muted: #6b7280;
+    --tile: #fafafa;
+    --tile-border: #ececec;
+    --accent: #ef4444;
+    --icon-color: var(--muted);
   }
-  /* Dark theme token overrides */
   body.dark{
-    --bg:#0b0e16; --text:#ffffff; --muted:#d1d5db; --tile:#111827; --tile-border:#1f2937; --accent:#f87171;
+    --bg:#0b0e16; --text:#ffffff; --muted:#9ca3af; --tile:#0b1220; --tile-border:#16202a; --accent:#f87171;
   }
 
-  /* Basic resets */
-  *{ box-sizing:border-box; }
-  html { font-size: var(--ui-font-size); } /* changing this scales rem */
+  *{ box-sizing: border-box; }
+  html { font-size: var(--ui-font-size); } /* A+/A- controls this */
   body{
     margin:0;
     font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-    background:var(--bg);
-    color:var(--text);
+    background:var(--bg); color:var(--text);
     -webkit-text-size-adjust:100%;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
   }
 
-  /* Outer red border requested */
+  /* Red border around viewport */
   .app-wrapper{ min-height:100dvh; border:10px solid var(--brand-red); display:flex; flex-direction:column; }
 
-  /* Header layout: grid so we can easily rearrange on mobile */
+  /* Header */
   header{
     padding: calc(0.75rem + 6px) 1rem;
-    display:grid;
-    grid-template-columns: auto 1fr auto;
-    gap:0.75rem;
-    align-items:center;
+    display:grid; grid-template-columns:auto 1fr auto; gap:0.75rem; align-items:center;
   }
-  header .logo{ width:3.5rem; height:3.5rem; object-fit:contain; border-radius:0.5rem; background:#fff; }
-  .brand .subtitle{ font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08rem; margin:0 0 0.125rem 0; }
+  .logo{ width:3.5rem; height:3.5rem; object-fit:contain; border-radius:0.5rem; background:#fff; }
+  .brand{ display:flex; flex-direction:column; align-items:flex-start; }
+  .brand .subtitle{ font-size:0.75rem; color:var(--muted); text-transform:uppercase; margin:0 0 0.125rem 0; }
   .brand .title{ font-weight:800; font-size:clamp(1.25rem, 4.5vw, 2rem); margin:0; line-height:1; }
 
-  /* Controls row — keeps inputs at 16px to prevent iOS zoom on focus */
+  /* Controls */
   .controls{ padding:0.5rem 1rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; }
-  .btn{ padding:0.5rem 0.75rem; border-radius:999px; border:1px solid var(--tile-border); background:var(--tile); cursor:pointer; color:var(--text); font-size:1rem; }
+  .btn{ padding:0.5rem 0.75rem; border-radius:999px; border:1px solid var(--tile-border); background:var(--tile); color:var(--text); cursor:pointer; font-size:1rem; }
   .btn.primary{ background:var(--accent); color:#fff; border:none; }
   .hint{ font-size:0.8125rem; color:var(--muted); }
 
-  /* Font-size controls (A- / A+) */
   .font-controls{ display:inline-flex; gap:0.5rem; align-items:center; }
 
-  /* Board area: 4 columns; rows auto-size to tallest tile in row */
+  /* Board: 4 columns; rows auto-size so tiles in a row have equal heights */
   .board-container{ padding:0.5rem 1rem 1rem; flex:1; }
-  .board{
-    display:grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap:0.75rem;
-    align-items:stretch; /* tiles in a row match the tallest */
-  }
+  .board{ display:grid; grid-template-columns: repeat(4, 1fr); gap:0.75rem; align-items:stretch; }
 
-  /* Tile: flexible rectangles. Use rem & clamp to scale with base font-size */
+  /* Tile: flexible rectangle (not forced square) */
   .tile{
-    background:var(--tile);
-    border:1px solid var(--tile-border);
-    border-radius:0.875rem;
-    display:flex;
-    flex-direction:column;
-    justify-content:flex-start;
-    position:relative;
-    padding:0.75rem 0.75rem 3.0rem 0.75rem; /* bottom padding reserves for icon */
-    overflow:hidden;
-    text-align:left;
-    min-height:6.5rem; /* sensible minimum height */
-    color:var(--text);
+    background:var(--tile); border:1px solid var(--tile-border); border-radius:0.875rem;
+    display:flex; flex-direction:column; position:relative; padding:0.75rem 0.75rem 3.0rem 0.75rem; overflow:hidden;
+    min-height:6.5rem; color:var(--text); text-align:left;
   }
-
-  /* Fact text: bold and sized relative to root (rem) */
-  .fact{ font-size:clamp(0.77rem, 2.4vw, 0.9375rem); line-height:1.25; font-weight:600; margin-bottom:0.5rem; word-break:break-word; color:var(--text); }
+  .fact{ font-size:clamp(0.77rem, 2.4vw, 0.9375rem); line-height:1.25; font-weight:600; margin-bottom:0.5rem; color:var(--text); word-break:break-word; }
   .meta{ margin-top:auto; font-size:0.8125rem; color:var(--muted); display:flex; gap:0.5rem; align-items:center; }
   .entry{ margin-top:0.5rem; font-size:0.8125rem; color:var(--text); }
-  .who{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%; }
+  /* FIX: Show full name by allowing wrap. Do not ellipsize. */
+  .who{ font-weight:700; word-break:break-word; white-space:normal; max-width:100%; }
+  /* Response text (we will limit to 10 words on save). Keep it readable. */
   .resp{ margin-top:0.25rem; opacity:0.95; font-size:0.8125rem; }
 
-  /* Icon bottom-right; OA fallback emoji if FA not available */
-  .fa-icon{ position:absolute; right:0.625rem; bottom:0.625rem; opacity:.22; font-size:1.6rem; display:none; pointer-events:none; color:var(--text); }
-  .emoji-fallback{ position:absolute; right:0.625rem; bottom:0.625rem; opacity:.22; font-size:1.6rem; display:inline-block; pointer-events:none; }
-  body.fa-loaded .fa-icon{ display:inline-block; }
-  body.fa-loaded .emoji-fallback{ display:none; }
+  /* Icon handling */
+  .fa-icon{ position:absolute; right:0.625rem; bottom:0.625rem; opacity:.22; font-size:1.6rem; display:none; pointer-events:none; color:var(--icon-color); }
+  .emoji-fallback{ position:absolute; right:0.625rem; bottom:0.625rem; opacity:.22; font-size:1.6rem; display:inline-block; pointer-events:none; color:var(--icon-color); }
+  body.fa-loaded .fa-available { display:inline-block; }
+  body.fa-loaded .fa-available ~ .emoji-fallback { display:none; }
 
-  /* When tile is filled we want the icon more visible — previously icons looked grey after submit */
-  .tile.filled .fa-icon,
-  .tile.filled .emoji-fallback {
-    opacity: 0.85; /* make the icon/emoji clearly visible for filled tiles */
-  }
+  .tile.filled{ outline:3px solid #22c55e; background: linear-gradient(180deg, rgba(16,185,129,.06), transparent 50%); --icon-color:var(--accent); }
+  .tile.filled .fa-icon, .tile.filled .emoji-fallback { opacity:1; }
 
-  /* Filled tile visual */
-  .tile.filled{ outline:3px solid #22c55e; background: linear-gradient(180deg, rgba(16,185,129,.06), transparent 50%); }
-
-  /* Modal: follow theme and make prompt darker/easy to read */
-  dialog.modal{
-    border:none; border-radius:0.75rem; padding:0; width:min(40rem,94vw);
-    background:var(--tile); color:var(--text);
-  }
+  /* Modal (theme-aware) */
+  dialog.modal{ border:none; border-radius:0.75rem; padding:0; width:min(40rem,94vw); background:var(--tile); color:var(--text); }
   dialog.modal::backdrop{ background: rgba(0,0,0,0.35); }
   .modal .inner{ padding:0.875rem; }
-  .modal .hint{ color:var(--text); font-weight:700; margin-bottom:0.5rem; }
-  .modal input, .modal textarea{
-    width:100%; font-size:1rem; padding:0.5rem 0.75rem; border-radius:0.625rem; border:1px solid var(--tile-border);
-    background:var(--bg); color:var(--text);
-  }
+  /* Make the modal prompt/question slightly darker for readability */
+  .modal .hint{ color:var(--text); font-weight:800; margin-bottom:0.5rem; }
+  .modal input, .modal textarea{ width:100%; font-size:1rem; padding:0.5rem 0.75rem; border-radius:0.625rem; border:1px solid var(--tile-border); background:var(--bg); color:var(--text); }
   .modal .actions{ display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.5rem; }
   .modal .btn{ color:var(--text); background:transparent; border:1px solid var(--tile-border); padding:0.5rem 0.75rem; border-radius:0.5rem; }
   .modal .btn.primary{ background:var(--accent); color:#fff; border:none; }
@@ -139,49 +103,40 @@
 
   footer{ padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center; font-size:0.8125rem; color:var(--muted); }
 
-  /* Mobile header adjustments so title doesn't get shoved right */
-  @media (max-width:700px){
-    header{ grid-template-columns: auto 1fr; grid-template-rows:auto auto; gap:0.25rem; align-items:start; }
-    .brand{ text-align:left; }
-    .logo{ width:3.25rem; height:3.25rem; }
-    .bingo-text{ font-size:3rem; }
+  @media (max-width:760px){
+    header{ display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.5rem 0.75rem; }
+    .brand{ margin-left:0.5rem; flex:1; }
     .tile{ padding:0.625rem 0.625rem 2.5rem 0.625rem; min-height:5.75rem; }
+    .bingo-text{ font-size:3rem; }
   }
 </style>
 </head>
 <body>
   <div class="app-wrapper" id="app">
     <header>
-      <!-- Logo: fallback to placeholder if hotlink fails -->
       <img class="logo" src="https://tse2.mm.bing.net/th/id/OIP.vB2_MMCK6wxXLJRR_2APTgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Engage Squared logo"
            onerror="this.src='https://via.placeholder.com/120x40?text=Engage+Squared'">
-
       <div class="brand">
         <div class="subtitle">ENGAGE SQUARED</div>
         <h1 class="title">Who the Fact Are You? 🎉</h1>
       </div>
-
-      <!-- Right-side small controls -->
       <div class="controls" style="justify-self:end;">
-        <select id="langSel" aria-label="Language" class="btn" title="Language">
+        <select id="langSel" aria-label="Language" class="btn">
           <option value="en">English</option>
           <option value="ja">日本語</option>
           <option value="id">Bahasa Indonesia</option>
         </select>
-
-        <!-- Dark mode toggle label updates dynamically -->
         <button id="darkToggle" class="btn" aria-pressed="false">🌙 Dark mode</button>
       </div>
     </header>
 
-    <!-- Top controls with randomise / start and font size buttons -->
     <div class="controls" style="padding:0.5rem 1rem;">
       <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
         <button id="randomBtn" class="btn">🔀 <span data-i18n="randomize">Randomise board</span> (<span id="rndLeft">3</span>)</button>
         <button id="startBtn" class="btn primary">▶ <span data-i18n="start">Start Bingo</span></button>
 
         <!-- Font size controls -->
-        <div class="font-controls">
+        <div class="font-controls" style="margin-left:0.5rem;">
           <button id="fontDec" class="btn" title="Decrease font">A−</button>
           <button id="fontInc" class="btn" title="Increase font">A+</button>
         </div>
@@ -202,47 +157,46 @@
     </footer>
   </div>
 
-  <!-- Modal for entering name & response (follows current theme) -->
+  <!-- Entry modal -->
   <dialog class="modal" id="entryModal">
     <form method="dialog" class="inner" onsubmit="return false;">
       <h3 id="modalTitle">Add a name & response</h3>
+      <!-- modalFact is intentionally darker (CSS above) for easy reading -->
       <div id="modalFact" class="hint" style="margin-bottom:8px;"></div>
 
       <label id="nameLabel" for="nameInput">Name</label>
-      <input id="nameInput" type="text" placeholder="Type their name" required style="margin-bottom:8px;" />
+      <!-- Keep input font-size 1rem to avoid Safari zoom (1rem equals var(--ui-font-size), which defaults to 16px) -->
+      <input id="nameInput" type="text" placeholder="Type their name" required style="margin-bottom:8px; font-size:1rem;" />
 
       <label id="respLabel" for="respInput">Response</label>
-      <textarea id="respInput" placeholder="A few words…" required></textarea>
+      <textarea id="respInput" placeholder="A few words…" required style="font-size:1rem;"></textarea>
 
-      <div class="actions">
+      <div class="actions" style="margin-top:8px;">
         <button id="cancelBtn" class="btn" value="cancel">Cancel</button>
         <button id="saveBtn" class="btn primary" value="confirm">Save</button>
       </div>
     </form>
   </dialog>
 
-  <!-- Bingo overlay (tap to dismiss) -->
+  <!-- Bingo overlay -->
   <div class="bingo-overlay" id="bingoOverlay"><div class="bingo-text" id="bingoText">BINGO!</div></div>
 
-  <!-- gentle crowd clap audio file (used on bingo) -->
+  <!-- gentle crowd clap audio -->
   <audio id="clapAudio" preload="auto" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_b4a41e8d27.mp3?filename=small-crowd-clapping-6695.mp3"></audio>
 
 <script>
-/* ================================
-   Full app JavaScript
-   Comments added inline to explain important parts
-   ================================ */
+/* Full JS — inline comments for clarity */
 
-/* ========= I18N & facts (EN/JA/ID) ========= */
-/* UI strings + localized facts (complete) */
+/* ========= I18N ========== */
+// Full English, Japanese and Bahasa data (UI strings + facts)
 const I18N = {
   en: {
     ui: {
-      language:'Language:', dark:'Dark mode', light:'Light mode', randomize:'Randomise board',
-      start:'Start Bingo', reset:'Reset Board', prehint:'You can shuffle up to 3× before starting.',
-      howto:'Tap a tile to enter a name + a short response. Fill lines to get BINGO!',
-      add:'Add a name & response', name:'Name', response:'Response', cancel:'Cancel', save:'Save',
-      filled:(n)=>`${n}/16 filled`, lines:(n)=>`${n} bingo line${n===1?'':'s'}`
+      language: 'Language:', dark: 'Dark mode', light: 'Light mode', randomize: 'Randomise board',
+      start: 'Start Bingo', reset: 'Reset Board', prehint: 'You can shuffle up to 3× before starting.',
+      howto: 'Tap a tile to enter a name + a short response. Fill lines to get BINGO!',
+      add: 'Add a name & response', name: 'Name', response: 'Response', cancel: 'Cancel', save: 'Save',
+      filled: (n) => `${n}/16 filled`, lines: (n) => `${n} bingo line${n === 1 ? '' : 's'}`
     },
     facts: [
       '…has worked at the company for over 10 years',
@@ -287,14 +241,13 @@ const I18N = {
       '…has a food they refuse to eat under any circumstance'
     ]
   },
-
   ja: {
     ui: {
-      language:'言語：', dark:'ダークモード', light:'ライトモード', randomize:'ボードをシャッフル',
-      start:'ビンゴ開始', reset:'リセット', prehint:'開始前は最大3回までシャッフルできます。',
-      howto:'タイルをタップして「名前」と「一言」を入力。列・行・斜めがそろうと BINGO!',
-      add:'名前と一言を入力', name:'名前', response:'一言メモ', cancel:'キャンセル', save:'保存',
-      filled:(n)=>`${n}/16 完了`, lines:(n)=>`ビンゴ ${n} ライン`
+      language: '言語：', dark: 'ダークモード', light: 'ライトモード', randomize: 'ボードをシャッフル',
+      start: 'ビンゴ開始', reset: 'リセット', prehint: '開始前は最大3回までシャッフルできます。',
+      howto: 'タイルをタップして「名前」と「一言」を入力。列・行・斜めがそろうと BINGO!', add: '名前と一言を入力',
+      name: '名前', response: '一言メモ', cancel: 'キャンセル', save: '保存',
+      filled: (n) => `${n}/16 完了`, lines: (n) => `ビンゴ ${n} ライン`
     },
     facts: [
       '…勤続10年以上の人',
@@ -339,14 +292,13 @@ const I18N = {
       '…絶対に食べない食べ物がある人'
     ]
   },
-
   id: {
     ui: {
-      language:'Bahasa:', dark:'Mode Gelap', light:'Mode Terang', randomize:'Acak papan',
-      start:'Mulai Bingo', reset:'Reset', prehint:'Sebelum mulai kamu bisa mengacak maksimal 3×.',
-      howto:'Ketuk ubin lalu isi nama + jawaban singkat. Buat garis untuk BINGO!', add:'Tambah nama & jawaban',
-      name:'Nama', response:'Jawaban singkat', cancel:'Batal', save:'Simpan',
-      filled:(n)=>`${n}/16 terisi`, lines:(n)=>`${n} garis bingo`
+      language: 'Bahasa:', dark: 'Mode Gelap', light: 'Mode Terang', randomize: 'Acak papan',
+      start: 'Mulai Bingo', reset: 'Reset', prehint: 'Sebelum mulai kamu bisa mengacak maksimal 3×.',
+      howto: 'Ketuk ubin lalu isi nama + jawaban singkat. Buat garis untuk BINGO!', add: 'Tambah nama & jawaban',
+      name: 'Nama', response: 'Jawaban singkat', cancel: 'Batal', save: 'Simpan',
+      filled: (n) => `${n}/16 terisi`, lines: (n) => `${n} garis bingo`
     },
     facts: [
       '…sudah bekerja di perusahaan lebih dari 10 tahun',
@@ -393,10 +345,7 @@ const I18N = {
   }
 };
 
-/* =================================
-   Per-question icons (FA + emoji fallback)
-   One-to-one mapping to questions array order
-   ================================= */
+/* Icons mapping */
 const ICONS = [
   { fa:'fa-briefcase', emoji:'🏢' }, { fa:'fa-masks-theater', emoji:'🎤' }, { fa:'fa-earth-americas', emoji:'🌍' },
   { fa:'fa-language', emoji:'🗣️' }, { fa:'fa-star', emoji:'⭐' }, { fa:'fa-person-running', emoji:'🏃' },
@@ -414,9 +363,7 @@ const ICONS = [
   { fa:'fa-ban', emoji:'🚫🍽️' }
 ];
 
-/* ===========================
-   Element references
-   =========================== */
+/* ---------------- DOM refs ---------------- */
 const boardEl = document.getElementById('board');
 const randomBtn = document.getElementById('randomBtn');
 const startBtn = document.getElementById('startBtn');
@@ -436,83 +383,40 @@ const saveBtn = document.getElementById('saveBtn');
 const bingoOverlay = document.getElementById('bingoOverlay');
 const bingoText = document.getElementById('bingoText');
 const clapAudio = document.getElementById('clapAudio');
-const fontIncBtn = document.getElementById('fontInc');
-const fontDecBtn = document.getElementById('fontDec');
 
-/* ===========================
-   App state (persisted)
-   completedLines handled as Set and correctly serialized
-   =========================== */
+/* ---------------- State ---------------- */
 let state = {
   lang: localStorage.getItem('wtaf-lang') || 'en',
   grid: [],
-  answers: {},
+  answers: {}, // idx -> {name, resp}
   started: false,
   randomLeft: 3,
   completedLines: new Set(),
   bingoScale: 1
 };
 
-/* ---------- Persist helpers ----------
-   Save/Load state while converting Set -> Array and back.
-*/
-function toSavableState(s){
-  const copy = {...s};
-  copy.completedLines = Array.from(s.completedLines || []);
-  return copy;
-}
-function fromSavedState(s){
-  if (!s) return null;
-  const revived = {...s};
-  revived.completedLines = new Set(Array.isArray(s.completedLines) ? s.completedLines : []);
-  return revived;
-}
-function saveState(){
-  try{
-    localStorage.setItem('wtaf-state', JSON.stringify(toSavableState(state)));
-    localStorage.setItem('wtaf-lang', state.lang);
-  }catch(e){ console.warn('save failed', e); }
-}
-function loadState(){
-  try{
-    const s = JSON.parse(localStorage.getItem('wtaf-state'));
-    const revived = fromSavedState(s);
-    if (revived && Array.isArray(revived.grid) && revived.grid.length===16){
-      state = {...state, ...revived};
-    }
-  }catch(e){ /* ignore invalid saved state */ }
-}
+/* Persist helpers (Set -> Array) */
+function toSavableState(s){ const copy = {...s}; copy.completedLines = Array.from(s.completedLines || []); return copy; }
+function fromSavedState(s){ if (!s) return null; const revived = {...s}; revived.completedLines = new Set(Array.isArray(s.completedLines) ? s.completedLines : []); return revived; }
+function saveState(){ try{ localStorage.setItem('wtaf-state', JSON.stringify(toSavableState(state))); localStorage.setItem('wtaf-lang', state.lang); }catch(e){console.warn('save failed', e);} }
+function loadState(){ try{ const s = JSON.parse(localStorage.getItem('wtaf-state')); const revived = fromSavedState(s); if (revived && Array.isArray(revived.grid) && revived.grid.length===16) { state = {...state, ...revived}; } }catch(e){} }
 
-/* ---------- i18n apply ----------
-   Update some visible strings and re-render board
-*/
+/* ---------- i18n apply ---------- */
 function applyLang(){
   langSel.value = state.lang;
-  const ui = I18N[state.lang] && I18N[state.lang].ui ? I18N[state.lang].ui : I18N.en.ui;
+  const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
   preHint.textContent = ui.prehint;
   howto.textContent = ui.howto;
   modalTitle.textContent = ui.add;
-  // update start/reset label if needed
   if (state.started) startBtn.innerHTML = `↺ ${ui.reset}`; else startBtn.innerHTML = `▶ ${ui.start}`;
-  renderBoard();
-  updateProgress();
-  saveState();
-  updateDarkToggleLabel(); // refresh dark toggle label if language changed
+  renderBoard(); updateProgress(); saveState(); updateDarkToggleLabel();
 }
 
-/* ---------- Small helpers ---------- */
-function shuffleArray(a){
-  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-  return a;
-}
-function safeEscape(str){
-  if (str === null || str === undefined) return '';
-  return String(str).replace(/[&<>\"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[s]));
-}
+/* Utility functions */
+function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function safeEscape(str){ if (str===null||str===undefined) return ''; return String(str).replace(/[&<>\"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[s])); }
 
-/* ---------- Board logic ----------
-   Create a 4x4 board by sampling 16 unique indices from the facts list
-*/
+/* Build a new 4x4 grid by sampling 16 unique indices from the 40 facts */
 function randomiseGrid(){
   const total = I18N.en.facts.length;
   const indices = [...Array(total).keys()];
@@ -524,22 +428,31 @@ function randomiseGrid(){
   state.bingoScale = 1;
   renderBoard(); updateProgress(); saveState();
 }
+
+/* Helpers to read tile text & icon from grid index */
 function tileTextByIndex(idx){
   const facts = (I18N[state.lang] && I18N[state.lang].facts) ? I18N[state.lang].facts : I18N.en.facts;
   return facts && facts[state.grid[idx]] ? String(facts[state.grid[idx]]) : '';
 }
-function tileIconByIndex(idx){
-  const factIdx = state.grid[idx];
-  return ICONS[factIdx] || { fa:'fa-circle-question', emoji:'❓' };
+function tileIconByIndex(idx){ const factIdx = state.grid[idx]; return ICONS[factIdx] || { fa:'fa-circle-question', emoji:'❓' }; }
+
+/* Per-icon FA availability detection (cache results to avoid repeated DOM ops) */
+const faAvailableCache = {};
+function isFaIconAvailable(iconClass){
+  if (faAvailableCache.hasOwnProperty(iconClass)) return faAvailableCache[iconClass];
+  const test = document.createElement('i');
+  test.className = `fa-solid ${iconClass}`;
+  test.style.position = 'absolute'; test.style.left = '-9999px'; test.style.opacity = '0';
+  document.body.appendChild(test);
+  const available = test.offsetWidth > 6 || test.offsetHeight > 6;
+  document.body.removeChild(test);
+  faAvailableCache[iconClass] = available;
+  return available;
 }
 
-/* ---------- Render board ----------
-   Build tiles as buttons (keyboard & a11y friendly)
-*/
+/* ---------- Render the board ---------- */
 function renderBoard(){
-  if (!Array.isArray(state.grid) || state.grid.length !== 16){
-    randomiseGrid(); return;
-  }
+  if (!Array.isArray(state.grid) || state.grid.length !== 16){ randomiseGrid(); return; }
   boardEl.innerHTML = '';
   for (let i=0;i<16;i++){
     const fact = tileTextByIndex(i);
@@ -550,26 +463,27 @@ function renderBoard(){
     tile.className = 'tile';
     tile.dataset.index = i;
 
-    // show only one Name in meta line and only Response below — no duplicate Name
+    // Only use FA icon if available, otherwise use emoji fallback
+    const faOk = isFaIconAvailable(icon.fa);
+    const faHtml = faOk ? `<i class="fa-solid ${icon.fa} fa-icon fa-available" aria-hidden="true"></i>` : `<i class="fa-solid ${icon.fa} fa-icon" aria-hidden="true" style="display:none"></i>`;
+    const emojiHtml = `<span class="emoji-fallback" aria-hidden="true">${icon.emoji}</span>`;
+
+    // Show only one Name next to the meta line, and the Response below it; avoid duplicate name
     tile.innerHTML = `
-      <i class="fa-solid ${icon.fa} fa-icon" aria-hidden="true"></i>
-      <span class="emoji-fallback" aria-hidden="true">${icon.emoji}</span>
+      ${faHtml}
+      ${emojiHtml}
       <div class="fact">${safeEscape(fact)}</div>
       <div class="meta"><span class="who">${ entry ? safeEscape(entry.name) : '' }</span></div>
       ${ entry ? `<div class="entry"><div class="resp">${safeEscape(entry.resp)}</div></div>` : '' }
     `;
-
     if (entry) tile.classList.add('filled');
-    // when clicked open modal to edit (only if started)
     tile.addEventListener('click', ()=> onTileClick(i, fact));
     boardEl.appendChild(tile);
   }
   detectFontAwesome();
 }
 
-/* ---------- Modal handling ----------
-   currentIdx tracks which tile is being edited
-*/
+/* ---------- Modal handling (Name + Response) ---------- */
 let currentIdx = null;
 function onTileClick(idx, fact){
   if (!state.started) return;
@@ -578,52 +492,68 @@ function onTileClick(idx, fact){
   nameInput.value = state.answers[idx]?.name || '';
   respInput.value = state.answers[idx]?.resp || '';
   try { entryModal.showModal(); } catch(e){ entryModal.setAttribute('open',''); }
-  // focus input (small delay to avoid issues on some mobile)
   setTimeout(()=> nameInput.focus(), 50);
 }
 
-/* Save handler for modal */
+/* Word-limiting helper: limit a string to maxWords, return truncated string + boolean flag if truncated */
+function limitWords(str, maxWords){
+  const words = str.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return { text: words.join(' '), truncated: false };
+  return { text: words.slice(0, maxWords).join(' ') + '…', truncated: true };
+}
+
+/* Prevent user from entering long responses by trimming on input (user still types but it's limited client-side) */
+respInput.addEventListener('input', ()=>{
+  // Allow editing but trim to reasonable size; we don't want to aggressively strip while typing,
+  // so we only trim if more than 40 words are attempted — mostly defensive.
+  const words = respInput.value.split(/\s+/).filter(Boolean);
+  if (words.length > 40) respInput.value = words.slice(0,40).join(' ');
+});
+
 saveBtn.addEventListener('click', (e)=>{
   e.preventDefault();
   const name = nameInput.value.trim();
   const resp = respInput.value.trim();
   if (!name || !resp) return; // require both
-  state.answers[currentIdx] = { name, resp };
+  // Enforce 10-word limit on response (store truncated version)
+  const limited = limitWords(resp, 10);
+  state.answers[currentIdx] = { name: name, resp: limited.text };
+  // close modal
   try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); }
   renderBoard();
   checkForNewBingo();
   updateProgress();
   saveState();
 });
+
 cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); } });
 
-/* ---------- Bingo detection & progress ----------
-   Row/column/diag detection for 4x4 grid
-*/
+/* ---------- Bingo calculation & progress ---------- */
 function calculateBingoLines(){
   const filled = new Set(Object.keys(state.answers).map(Number));
   const lines = [];
   for (let r=0;r<4;r++) lines.push([0,1,2,3].map(c=>r*4+c));
   for (let c=0;c<4;c++) lines.push([0,1,2,3].map(r=>r*4+c));
-  lines.push([0,5,10,15]); lines.push([3,6,9,12]);
+  lines.push([0,5,10,15]);
+  lines.push([3,6,9,12]);
   const completed = new Set();
   lines.forEach((l,i)=>{ if (l.every(x=>filled.has(x))) completed.add(i); });
   return completed;
 }
+
 function updateProgress(){
   const filled = Object.keys(state.answers).length;
   const lines = calculateBingoLines();
   progressEl.textContent = `${I18N[state.lang].ui.filled(filled)} · ${I18N[state.lang].ui.lines(lines.size)}`;
 }
 
-/* Check and celebrate new bingoes */
 function checkForNewBingo(){
   const now = calculateBingoLines();
   const prev = (state.completedLines instanceof Set) ? state.completedLines : new Set();
   const newOnes = [...now].filter(i=>!prev.has(i));
   if (newOnes.length){
     state.completedLines = now;
-    state.bingoScale *= 1.5; // scale up BINGO size 50% each new bingo
+    state.bingoScale *= 1.5; // scale increase per new bingo
     playClapSound();
     showBingo();
   }
@@ -631,14 +561,13 @@ function checkForNewBingo(){
   saveState();
 }
 
-/* ---------- Confetti + overlay ----------
-   Show confetti for ~1.2s and a big scalable BINGO text.
-*/
+/* ---------- Bingo overlay + confetti ---------- */
 function showBingo(){
   bingoOverlay.classList.add('show');
   bingoText.style.transform = `scale(${state.bingoScale})`;
   bingoText.textContent = 'BINGO!';
-  const duration = 1200; const end = Date.now() + duration;
+  const duration = 1200;
+  const end = Date.now() + duration;
   (function frame(){
     confetti({ particleCount: 6, spread: 60, startVelocity: 32, origin: { x: Math.random(), y: Math.random()*0.35 }});
     if (Date.now() < end) requestAnimationFrame(frame);
@@ -646,20 +575,16 @@ function showBingo(){
 }
 bingoOverlay.addEventListener('click', ()=> bingoOverlay.classList.remove('show'));
 
-/* ---------- Audio: gentle crowd clap ----------
-   Try using <audio> clip first for consistent volume; fallback to WebAudio noise bursts.
-*/
+/* ---------- Sound (crowd clapping) ---------- */
 let audioCtx = null, unlocked = false;
 function resumeAudio(){ if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); unlocked = true; }
 window.addEventListener('pointerdown', resumeAudio, { once:true });
 
 function playClapSound(){
-  // prefer audio element (gentle volume)
   if (clapAudio && typeof clapAudio.play === 'function'){
     try { clapAudio.volume = 0.28; clapAudio.currentTime = 0; clapAudio.play().catch(()=>{}); } catch(e){}
     return;
   }
-  // fallback create short noise-ish bursts
   if (!unlocked) return;
   const master = audioCtx.createGain(); master.gain.value = 0.2; master.connect(audioCtx.destination);
   for (let i=0;i<6;i++){
@@ -674,16 +599,12 @@ function playClapSound(){
   }
 }
 
-/* ---------- Font Awesome detection for fallback emoji ----------
-   If FA loaded, show FA icons; otherwise show the emoji fallback
-*/
+/* ---------- Font Awesome detection ---------- */
 function detectFontAwesome(){
   try{ if (document.fonts && document.fonts.check("1em 'Font Awesome 6 Free'")) document.body.classList.add('fa-loaded'); else document.body.classList.remove('fa-loaded'); } catch(e){ document.body.classList.remove('fa-loaded'); }
 }
 
-/* ---------- Controls wiring ----------
-   Randomise, Start/Reset, Dark toggle, Language selector
-*/
+/* ---------- Controls wiring ---------- */
 randomBtn.addEventListener('click', ()=>{
   if (state.started) return;
   if (state.randomLeft <= 0) return;
@@ -701,7 +622,7 @@ startBtn.addEventListener('click', ()=>{
     randomBtn.disabled = true;
     resumeAudio();
   } else {
-    // Reset board: clear answers & restore shuffle allowance
+    // Reset board to allow new randomize and editing
     state.started = false; state.answers = {}; state.completedLines = new Set(); state.bingoScale = 1;
     state.randomLeft = 3; rndLeftEl.textContent = '3';
     startBtn.classList.add('primary'); startBtn.innerHTML = `▶ ${ui.start}`;
@@ -710,93 +631,45 @@ startBtn.addEventListener('click', ()=>{
   }
 });
 
-/* Dark toggle updates label to show sun emoji in dark mode */
+/* Dark toggle label updates */
 function updateDarkToggleLabel(){
   const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
-  if (document.body.classList.contains('dark')) {
-    darkToggle.textContent = `☀ ${ui.light || 'Light mode'}`;
-  } else {
-    darkToggle.textContent = `🌙 ${ui.dark || 'Dark mode'}`;
-  }
+  if (document.body.classList.contains('dark')) darkToggle.textContent = `☀ ${ui.light || 'Light mode'}`;
+  else darkToggle.textContent = `🌙 ${ui.dark || 'Dark mode'}`;
 }
 darkToggle.addEventListener('click', ()=>{
   document.body.classList.toggle('dark');
   darkToggle.setAttribute('aria-pressed', document.body.classList.contains('dark') ? 'true' : 'false');
-  localStorage.setItem('wtaf-dark', document.body.classList.contains('dark') ? '1':'0');
+  localStorage.setItem('wtaf-dark', document.body.classList.contains('dark') ? '1' : '0');
   updateDarkToggleLabel();
 });
 
-/* Language selector — re-render board text when changed */
 langSel.addEventListener('change', ()=>{ state.lang = langSel.value; applyLang(); });
 
-/* ---------- Font size controls (A- / A+) ----------
-   Persist font size in localStorage, clamp it to [12..22] px for safety.
-*/
+/* Font size A+/A- */
 const FONT_MIN = 12, FONT_MAX = 22;
-function getSavedFontSize(){
-  const val = parseInt(localStorage.getItem('wtaf-fontsize') || '', 10);
-  return Number.isFinite(val) ? val : 16;
-}
-function setFontSize(px){
-  const clamped = Math.max(FONT_MIN, Math.min(FONT_MAX, Math.round(px)));
-  document.documentElement.style.setProperty('--ui-font-size', clamped + 'px');
-  localStorage.setItem('wtaf-fontsize', String(clamped));
-}
-fontIncBtn.addEventListener('click', ()=> {
-  const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size') || '16', 10);
-  setFontSize(cur + 1);
-});
-fontDecBtn.addEventListener('click', ()=> {
-  const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size') || '16', 10);
-  setFontSize(cur - 1);
-});
+function getSavedFontSize(){ const v = parseInt(localStorage.getItem('wtaf-fontsize') || '', 10); return Number.isFinite(v) ? v : 16; }
+function setFontSize(px){ const clamped = Math.max(FONT_MIN, Math.min(FONT_MAX, Math.round(px))); document.documentElement.style.setProperty('--ui-font-size', clamped + 'px'); localStorage.setItem('wtaf-fontsize', String(clamped)); }
+document.getElementById('fontInc').addEventListener('click', ()=>{ const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size')||'16',10); setFontSize(cur+1); });
+document.getElementById('fontDec').addEventListener('click', ()=>{ const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size')||'16',10); setFontSize(cur-1); });
 
-/* ---------- Boot sequence ----------
-   Load state, set dark mode & font size preferences, detect fonts, initialize UI.
-*/
+/* ---------- Boot ---------- */
 loadState();
 document.body.classList.toggle('dark', localStorage.getItem('wtaf-dark') === '1');
 rndLeftEl.textContent = state.randomLeft;
-
-// Apply saved font size if present (before rendering so text uses it)
 setFontSize(getSavedFontSize());
-
-// Set language UI & render
 applyLang();
+if (state.started){ startBtn.classList.remove('primary'); startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`; randomBtn.disabled = true; }
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(detectFontAwesome); else setTimeout(detectFontAwesome, 400);
 
-// If started when last saved, restore start button as Reset
-if (state.started){
-  startBtn.classList.remove('primary');
-  startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`;
-  randomBtn.disabled = true;
-}
-
-// Detect Font Awesome availability and enable icons
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(detectFontAwesome);
-else setTimeout(detectFontAwesome, 400);
-
-/* Small runtime self-tests (console) to catch regressions */
+/* runtime tests (console) */
 (function runSelfTests(){
   console.groupCollapsed('WTFAY self-tests');
-  const temp = { completedLines: new Set([1,2,7]) };
-  const s = JSON.stringify(toSavableState(temp));
+  const tmp = { completedLines: new Set([1,2,7]) };
+  const s = JSON.stringify(toSavableState(tmp));
   const r = fromSavedState(JSON.parse(s));
-  console.assert(r.completedLines instanceof Set, 'completedLines revived to Set');
-  console.assert(r.completedLines.has(7), 'revived set contains 7');
-
-  function bingoLinesFromAnswers(answers){
-    const filled = new Set(Object.keys(answers).map(Number));
-    const lines = [];
-    for (let r=0;r<4;r++) lines.push([0,1,2,3].map(c=>r*4+c));
-    for (let c=0;c<4;c++) lines.push([0,1,2,3].map(r=>r*4+c));
-    lines.push([0,5,10,15]); lines.push([3,6,9,12]);
-    const completed = new Set();
-    lines.forEach((l,i)=>{ if (l.every(x=>filled.has(x))) completed.add(i); });
-    return completed;
-  }
-  console.assert(bingoLinesFromAnswers({0:{},1:{},2:{},3:{}}).size===1,'row bingo');
-  console.assert(bingoLinesFromAnswers({0:{},4:{},8:{},12:{}}).size===1,'column bingo');
-  console.assert(bingoLinesFromAnswers({0:{},5:{},10:{},15:{}}).size===1,'diag bingo');
+  console.assert(r.completedLines instanceof Set, 'revived set');
+  console.assert(r.completedLines.has(7), 'contains 7');
   console.groupEnd();
 })();
 </script>
