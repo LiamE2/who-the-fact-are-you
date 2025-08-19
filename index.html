@@ -20,9 +20,13 @@
     --tile-border: #ececec;
     --accent: #ef4444;
     --bingo-green: #22c55e;
+    --praise-bg: linear-gradient(135deg,#ffd166,#ff8c42);
+    --praise-color: #1b1b1b;
   }
   body.dark{
     --bg:#0b0e16; --text:#ffffff; --muted:#9ca3af; --tile:#0b1220; --tile-border:#16202a; --accent:#f87171;
+    --praise-bg: linear-gradient(135deg,#8be9a8,#57e389);
+    --praise-color: #051017;
   }
   *{ box-sizing: border-box; }
   html { font-size: var(--ui-font-size); }
@@ -37,7 +41,7 @@
   .logo{ width:3.2rem; height:3.2rem; object-fit:contain; border-radius:0.5rem; background:#fff; flex:0 0 auto; margin-right:0.5rem; z-index:2; }
   .brand{ display:flex; flex-direction:column; align-items:flex-start; flex:1 1 auto; min-width:0; }
   .brand .subtitle{ font-size:0.75rem; color:var(--muted); text-transform:uppercase; margin:0 0 0.125rem 0; }
-  .brand .title{ font-weight:800; font-size:clamp(18px, 4.5vw, 28px); margin:0; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-left:0; }
+  .brand .title{ font-weight:800; font-size:clamp(18px, 4.5vw, 28px); margin:0; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-left:0; transition: all .18s ease; }
 
   .controls{ padding:0.5rem 1rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; }
   .btn{ padding:0.5rem 0.75rem; border-radius:999px; border:1px solid var(--tile-border); background:var(--tile); color:var(--text); cursor:pointer; font-size:1rem; }
@@ -46,7 +50,7 @@
   .font-controls{ display:inline-flex; gap:0.5rem; align-items:center; }
 
   .board-container{ padding:0.5rem 1rem 1rem; flex:1; }
-  .board{ display:grid; gap:0.75rem; align-items:stretch; }
+  .board{ display:grid; gap:0.75rem; align-items:stretch; position:relative; overflow:visible; }
 
   .tile{
     background:var(--tile); border:1px solid var(--tile-border); border-radius:0.875rem;
@@ -87,9 +91,93 @@
 
   .bingo-overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.35); z-index:9999; }
   .bingo-overlay.show{ display:flex; }
-  .bingo-text{ font-weight:900; font-size:4rem; color:#fff; text-shadow:0 6px 22px rgba(0,0,0,.55); }
+  .bingo-text{ font-weight:900; font-size:4rem; color:#fff; text-shadow:0 6px 22px rgba(0,0,0,.55); transform: scale(1); }
 
-  footer{ padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center; font-size:0.8125rem; color:var(--muted); }
+  /* Praise popup */
+  .praise {
+    position:fixed;
+    right:18px;
+    top:18px;
+    z-index:10001;
+    background:var(--praise-bg);
+    color:var(--praise-color);
+    padding:14px 16px;
+    border-radius:12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    font-weight:800;
+    max-width: 340px;
+    cursor: pointer;
+    transform-origin: center;
+    transition: transform 180ms cubic-bezier(.2,.9,.3,1), opacity 160ms ease;
+    opacity:0;
+    pointer-events:none;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .praise.visible { opacity:1; transform: translateY(0) scale(1); pointer-events:auto; }
+  .praise.hidden { opacity:0; transform: translateY(-6px) scale(.98); pointer-events:none; }
+
+  /* Surprise popup (kept in DOM but not used as separate when multiple bingos) */
+  .surprise {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 14px;
+    z-index:10002;
+    background: rgba(20,20,25,0.96);
+    color: #fff;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-weight:700;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.28);
+    opacity:0; pointer-events:none;
+    transition: opacity 160ms ease, transform 180ms cubic-bezier(.2,.9,.3,1);
+  }
+  .surprise.show { opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
+  .surprise.hide { opacity:0; transform: translateX(-50%) translateY(-6px); pointer-events:none; }
+
+  /* effect / tiny overlays */
+  .effect-layer { position:fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:10000; overflow:visible; }
+  .parade { position: absolute; bottom: 12%; left:-20%; display:flex; gap:12px; transform: translateX(0); animation: parade-move 6s linear forwards; }
+  .parade span { font-size: 28px; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.12)); }
+  @keyframes parade-move { to { transform: translateX(140vw); } }
+
+  .barrel { position:absolute; top:45%; left:-10%; font-size:40px; transform: rotate(0deg); animation: barrel-roll 2.2s linear forwards; }
+  @keyframes barrel-roll { to { transform: translateX(140vw) rotate(1080deg); } }
+
+  .pokeball { position:absolute; top:30%; left: -8%; width:48px; height:48px; border-radius:50%; background: radial-gradient(circle at 50% 35%, #fff 0 60%, #fff 100%); border:4px solid #000; overflow:hidden; transform: translateX(0) scale(1); animation: pokeball-throw 1.6s cubic-bezier(.2,.9,.2,1) forwards; }
+  .pokeball::before{ content:''; position:absolute; left:0; top:0; width:100%; height:50%; background:#d22; }
+  .pokeball::after{ content:''; position:absolute; left:0; top:50%; width:100%; height:50%; background:#fff; }
+  @keyframes pokeball-throw { 20% { transform: translate(22vw,-18vh) scale(.9) rotate(20deg); } 50% { transform: translate(50vw,-30vh) scale(.8) rotate(60deg); } 80%{ transform: translate(78vw,-10vh) scale(.85) rotate(100deg); } 100%{ transform: translate(80vw,0) scale(.6) rotate(140deg); opacity:0; } }
+
+  .thumbup { position:absolute; right:10%; top:35%; font-size:86px; transform: scale(.2); opacity:0; animation: thumb-pop .6s ease-out forwards; }
+  @keyframes thumb-pop { to { transform: scale(1); opacity:1; } }
+
+  .chefkiss { position:absolute; top:32%; left:50%; transform:translateX(-50%) scale(.6); opacity:0; font-size:48px; animation: chef-pop .8s ease forwards; }
+  @keyframes chef-pop { 30% { opacity:1; transform:translateX(-50%) scale(1); } 100% { opacity:0; transform:translateX(-50%) scale(1.05); } }
+
+  .divine { position:absolute; inset:0; background: radial-gradient( circle at 50% 20%, rgba(255,255,210,0.6), rgba(255,255,210,0.15) 10%, transparent 40%); opacity:0; animation: divine-pop 1s ease forwards; pointer-events:none; }
+  @keyframes divine-pop { from { opacity:0; } to { opacity:1; } }
+
+  .glow-eyes { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:56px; opacity:0; animation: eyes-pop 1s forwards; }
+  @keyframes eyes-pop { 0%{ opacity:0; transform:translate(-50%,-50%) scale(.6) } 40%{ opacity:1; transform:translate(-50%,-50%) scale(1.05) } 100%{ opacity:0; transform:translate(-50%,-50%) scale(1.15) } }
+
+  .leaderboard { position:fixed; right:20px; top:80px; background: #fff; color:#111; padding:10px 12px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.18); width:200px; text-align:left; pointer-events:none; animation: fadein 320ms ease; z-index:10002; }
+  .leaderboard h4{ margin:0 0 6px; font-size:14px; }
+  .leaderboard li{ list-style:none; padding:6px 0; border-bottom:1px solid #eee; }
+  .leaderboard li.you{ font-weight:900; color:var(--accent); background:linear-gradient(90deg, rgba(255,240,220,0.5), transparent); padding:6px; border-radius:6px; }
+
+  .slash { position:absolute; left:-20%; top:-10%; width:140%; height:140%; pointer-events:none; transform: rotate(-18deg); }
+  .slash .line { position:absolute; left:0; top:45%; height:6px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95), rgba(255,255,255,0)); width:0; animation: slash-anim 420ms ease forwards; mix-blend-mode:screen; filter: drop-shadow(0 8px 18px rgba(255,255,255,0.15)); }
+  @keyframes slash-anim { 100%{ width:140%; } }
+
+  .clapper { position:fixed; left:50%; top:20%; transform:translateX(-50%) translateY(-200%); z-index:10003; font-size:42px; animation: clapper-drop 700ms forwards; }
+  @keyframes clapper-drop { 50%{ transform:translateX(-50%) translateY(6%); } 100%{ transform:translateX(-50%) translateY(12%); opacity:1; } }
+  .cinematic { position: fixed; left:0; right:0; height:80px; background:#000; top:-80px; z-index:10002; animation: cinematic-in 400ms forwards; }
+  .cinematic.bottom { top:auto; bottom:-80px; animation: cinematic-in-bottom 400ms forwards; }
+  @keyframes cinematic-in { to { top:0; } }
+  @keyframes cinematic-in-bottom { to { bottom:0; } }
 
   @media (max-width:760px){
     header{ padding:0.5rem 0.75rem; gap:0.5rem; }
@@ -99,6 +187,8 @@
     .tile{ padding:0.625rem 0.625rem 2.5rem 0.625rem; min-height:5.75rem; }
     .bingo-text{ font-size:3rem; }
     .modal input, .modal textarea{ font-size:16px; }
+    .praise{ left: 50%; right: auto; transform: translateX(-50%); top: 12px; max-width: 92%; }
+    .leaderboard { right:8px; top:70px; width:160px; }
   }
 </style>
 </head>
@@ -158,6 +248,15 @@
     </footer>
   </div>
 
+  <!-- Praise popup (hidden by default) -->
+  <div id="praise" class="praise hidden" role="button" aria-live="polite" title="Click to dismiss"></div>
+
+  <!-- Surprise popup shown before subsequent bingos -->
+  <div id="surprise" class="surprise hide" aria-hidden="true"></div>
+
+  <!-- effect container -->
+  <div id="effects" class="effect-layer" aria-hidden="true"></div>
+
   <dialog class="modal" id="entryModal">
     <form method="dialog" class="inner" onsubmit="return false;">
       <h3 id="modalTitle">Add a name & response</h3>
@@ -187,16 +286,44 @@
 <script>
 /* Config */
 const RESPONSE_CHAR_LIMIT = 60; // per-response character cap
+const PRAISE_AUTO_DISMISS_MS = 10_000; // auto-dismiss after 10s
+const BASE_BINGO_INTERVAL_MS = 2000; // 2 seconds between bingos when multiple completed
+const SURPRISE_DURATION_MS = 1200; // how long surprise popup shows (it appears before the next bingo)
 
-/* i18n — only English expanded here for brevity; include other languages if desired */
+/* mapping for special effects used by effectKey values */
+const EFFECT_MAP = [
+  { key: 'parade',   fn: triggerParade },
+  { key: 'trending', fn: triggerTrendingBadge },
+  { key: 'barrel',   fn: triggerBarrel },
+  { key: 'pokeball', fn: triggerPokeball },
+  { key: 'thumb',    fn: triggerThumbUp },
+  { key: 'chef',     fn: triggerChefKiss },
+  { key: 'divine',   fn: triggerDivineLight },
+  { key: 'leader',   fn: triggerLeaderboard },
+  { key: 'slash',    fn: triggerSwordSlash },
+  { key: 'rename',   fn: triggerRenameTitle },
+  { key: 'cinematic',fn: triggerCinematic }
+];
+
+/* i18n — UI strings, facts, praises, surprises for each supported language */
 const I18N = {
   en: {
     ui: {
-      language: 'Language:', dark: 'Dark mode', light: 'Light mode', randomize: 'Randomise board',
-      start: 'Start Bingo', reset: 'Reset Board', prehint: 'You can shuffle up to 3× before starting.',
+      randomize: 'Randomise board',
+      start: 'Start Bingo',
+      reset: '↺ Reset',
+      preHint: 'You can shuffle up to 3× before starting.',
       howto: 'Tap a tile then add a name & short response. Fill lines to get BINGO!',
-      add: 'Add a name & response', name: 'Name', response: 'Response', cancel: 'Cancel', save: 'Save',
-      filled: (n, total) => `${n}/${total} filled`, lines: (n) => `${n} bingo line${n === 1 ? '' : 's'}`
+      modalTitle: 'Add a name & response',
+      nameLabel: 'Name',
+      respLabel: 'Response',
+      respHint: 'Max {n} chars',
+      cancel: 'Cancel',
+      save: 'Save',
+      darkMode: '🌙 Dark mode',
+      lightMode: '☀ Light mode',
+      filled: (n, total) => `${n}/${total} filled`,
+      lines: (n) => `${n} bingo line${n === 1 ? '' : 's'}`
     },
     facts: [
       '…has worked at the company for over 10 years',
@@ -239,11 +366,235 @@ const I18N = {
       '…has a story about a travel fail',
       '…has a favourite board game or card game',
       '…has a food they refuse to eat under any circumstance'
+    ],
+    praises: [
+      { text: 'Bingo! Now do it again — the world depends on it', effect: null },
+      { text: "Nice one! You're a human confetti machine.", effect: null },
+      { text: 'Whoa — that deserves a tiny parade. Keep going!', effect: 'parade' },
+      { text: 'Amazing — your bingo skills are trending locally.', effect: 'trending' },
+      { text: "That's one. Collect them like they're rare snacks.", effect: null },
+      { text: 'Solid work. More bingos, less sleep!', effect: null },
+      { text: "Hot dang — you're on a bingo roll. Roll harder.", effect: 'barrel' },
+      { text: 'Impressive! Rewards: bragging rights and vibes', effect: null },
+      { text: 'You caught one — go catch the rest like Pokémon', effect: 'pokeball' },
+      { text: 'Beautifully done. Next target: world domination (or another bingo)', effect: null },
+      { text: 'That’s a thumb up from fate. Get greedy', effect: 'thumb' },
+      { text: "Chef's kiss. Serve another bingo, please", effect: 'chef' },
+      { text: 'A bingo a day keeps boredom away. Keep collecting!', effect: null },
+      { text: 'Bingo is a dish best served multiple times', effect: null },
+      { text: 'You’ve got more Bingos in you. I can feel it!', effect: null },
+      { text: 'That was just your warm-up round, right?', effect: null },
+      { text: 'Don’t stop now — the Bingo gods are watching', effect: 'divine' },
+      { text: 'One Bingo? Cute', effect: null },
+      { text: 'You just made the Bingo Hall of Fame. Probably.', effect: 'leader' },
+      { text: 'Bingo unlocked. Next level: Legend', effect: null },
+      { text: 'Bingo? More like Bing-WHOA!', effect: null },
+      { text: 'That was a FACTastrophe… for everyone else', effect: null },
+      { text: 'Who needs Google when we’ve got YOU?', effect: null },
+      { text: 'You’re not just playing — you’re fact-slaying', effect: 'slash' },
+      { text: 'Keep going — the next one’s got your name on it', effect: null },
+      { text: 'That was so good, we’re renaming the game after you', effect: 'rename' },
+      { text: 'You’ve officially entered your ‘main character’ Bingo arc', effect: 'cinematic' }
+    ],
+    surprises: [
+      'What? Another one already?',
+      "Seriously? You're on 🔥",
+      "Again?! Save some for the rest of us."
+    ]
+  },
+  ja: {
+    ui: {
+      randomize: 'ボードをシャッフル',
+      start: 'ビンゴ開始',
+      reset: '↺ リセット',
+      preHint: '開始前に最大3回シャッフルできます。',
+      howto: 'タイルをタップして名前と短い回答を入力します。列を埋めてBINGOを出そう！',
+      modalTitle: '名前と回答を追加',
+      nameLabel: '名前',
+      respLabel: '回答',
+      respHint: '最大 {n} 文字',
+      cancel: 'キャンセル',
+      save: '保存',
+      darkMode: '🌙 ダークモード',
+      lightMode: '☀ ライトモード',
+      filled: (n, total) => `${n}/${total} 入力済み`,
+      lines: (n) => `${n} ビンゴライン`
+    },
+    facts: [
+      '…その会社で10年以上働いている',
+      '…公に披露した隠れた才能がある',
+      '…5か国以上に旅行したことがある',
+      '…2つ以上の言語を話せる',
+      '…有名人に会ったことがある',
+      '…マラソンを完走したことがある',
+      '…犬や猫以外のペットを飼っている',
+      '…3つ以上の都市に住んだことがある',
+      '…あなたと同じ誕生月である',
+      '…全く違う業界で働いていたことがある',
+      '…サイドハッスルや情熱的なプロジェクトがある',
+      '…入社して6か月未満である',
+      '…独特な趣味を持っている（例：養蜂、陶芸）',
+      '…コーヒーを飲んだことがない',
+      '…テレビやラジオに出演したことがある',
+      '…双子であるか、双子がいる',
+      '…スカイダイビングやバンジージャンプをしたことがある',
+      '…話のあるタトゥーを持っている',
+      '…先月コンサートに行った',
+      '…今年20冊以上読んだ',
+      '…他国からリモートで働いたことがある',
+      '…珍しいコレクションを持っている',
+      '…舞台作品に参加したことがある',
+      '…今でも呼ばれているニックネームがある',
+      '…賞やコンペに勝ったことがある',
+      '…おすすめのポッドキャストがある',
+      '…やり遂げたバケットリストがある',
+      '…カラオケの定番曲がある',
+      '…有名人の物真似ができる',
+      '…変な食べ物の組み合わせが好き',
+      '…ペットに人名をつけている',
+      '…危険なスポーツを経験したことがある',
+      '…有名人に間違われたことがある',
+      '…バイラル動画を持っているか、知っている',
+      '…よく使う絵文字がある',
+      '…面白い陰謀論を知っている（冗談で）',
+      '…共感する架空のキャラクターがいる',
+      '…旅の失敗談がある',
+      '…好きなボードゲームがある',
+      '…絶対に食べない食べ物がある'
+    ],
+    praises: [
+      { text: 'ビンゴ！もう一回やってください — 世界がそれにかかっている', effect: null },
+      { text: 'いいね！あなたは人間コンフェッティマシンだ。', effect: null },
+      { text: 'おお — 小さなパレードに値する！続けて！', effect: 'parade' },
+      { text: 'すごい — あなたのビンゴスキルがローカルでトレンド入り中。', effect: 'trending' },
+      { text: 'それが一つ。レアなおやつのように集めよう。', effect: null },
+      { text: '素晴らしい。もっとビンゴを、睡眠はほどほどに！', effect: null },
+      { text: 'すごい — ビンゴが続いている。もっと転がせ。', effect: 'barrel' },
+      { text: '見事！報酬：自慢と良い雰囲気', effect: null },
+      { text: '捕まえた — 残りもポケモンのように捕まえよう', effect: 'pokeball' },
+      { text: '美しい出来栄え。次の目標：世界征服（またはもう一つのビンゴ）', effect: null },
+      { text: '運命からの親指アップ。貪欲になれ', effect: 'thumb' },
+      { text: 'シェフのキス。もう一つのビンゴをお願いします', effect: 'chef' },
+      { text: 'ビンゴは退屈を遠ざける一皿だ。集め続けよう！', effect: null },
+      { text: 'ビンゴは何度も提供されるべき料理だ', effect: null },
+      { text: 'まだまだビンゴがある。感じてる！', effect: null },
+      { text: 'これはウォームアップだったのかな？', effect: null },
+      { text: '今やめないで — ビンゴの神々が見ている', effect: 'divine' },
+      { text: '一つのビンゴ？可愛い', effect: null },
+      { text: 'ビンゴ殿堂入りを果たしたかも。', effect: 'leader' },
+      { text: 'ビンゴ解除。次のレベル：伝説', effect: null },
+      { text: 'ビンゴ？むしろビング-ワオ！', effect: null },
+      { text: 'それはFACTastrophe… 他の人にとって', effect: null },
+      { text: 'Googleよりあなたがいる', effect: null },
+      { text: 'ただ遊んでいるだけじゃない — あなたは事実を斬っている', effect: 'slash' },
+      { text: '続けて — 次はあなたの名前がある', effect: null },
+      { text: 'あまりに良かった、ゲーム名をあなたの名前に変えるかも', effect: 'rename' },
+      { text: 'あなたは公式に「主人公」ビンゴアークに突入した', effect: 'cinematic' }
+    ],
+    surprises: [
+      'え？もう一つ？',
+      '本当？止まらないね🔥',
+      'また？みんなのために少し残しておいて！'
+    ]
+  },
+  id: {
+    ui: {
+      randomize: 'Acak papan',
+      start: 'Mulai Bingo',
+      reset: '↺ Reset',
+      preHint: 'Anda dapat mengacak hingga 3× sebelum memulai.',
+      howto: 'Ketuk ubin untuk menambahkan nama & jawaban singkat. Isi baris untuk mendapatkan BINGO!',
+      modalTitle: 'Tambahkan nama & jawaban',
+      nameLabel: 'Nama',
+      respLabel: 'Jawaban',
+      respHint: 'Maks {n} karakter',
+      cancel: 'Batal',
+      save: 'Simpan',
+      darkMode: '🌙 Mode gelap',
+      lightMode: '☀ Mode terang',
+      filled: (n, total) => `${n}/${total} terisi`,
+      lines: (n) => `${n} baris bingo`
+    },
+    facts: [
+      '…telah bekerja di perusahaan lebih dari 10 tahun',
+      '…memiliki bakat tersembunyi yang pernah ditampilkan',
+      '…pernah bepergian ke lebih dari 5 negara',
+      '…berbicara lebih dari dua bahasa',
+      '…pernah bertemu orang terkenal',
+      '…pernah menyelesaikan maraton atau tantangan kebugaran',
+      '…memiliki hewan peliharaan selain anjing atau kucing',
+      '…pernah tinggal di lebih dari tiga kota',
+      '…punya bulan ulang tahun yang sama denganmu',
+      '…pernah bekerja di industri yang benar-benar berbeda',
+      '…punya side hustle atau proyek sampingan',
+      '…bergabung kurang dari 6 bulan',
+      '…punya hobi unik (mis: beternak lebah, tembikar)',
+      '…tidak pernah minum kopi',
+      '…pernah tampil di TV atau radio',
+      '…kembar atau punya saudara kembar',
+      '…pernah terjun payung atau bungee jumping',
+      '…punya tato dengan cerita',
+      '…pernah menghadiri konser bulan lalu',
+      '…membaca lebih dari 20 buku tahun ini',
+      '…pernah bekerja jarak jauh dari negara lain',
+      '…punya koleksi yang tidak biasa',
+      '…pernah ikut produksi teater',
+      '…punya julukan yang masih dipakai',
+      '…pernah menang kompetisi atau penghargaan',
+      '…punya podcast favorit yang direkomendasikan',
+      '…mencapai salah satu item bucket list',
+      '…punya lagu karaoke andalan',
+      '…bisa meniru selebriti spontan',
+      '…punya kombinasi makanan aneh yang disukai',
+      '…punya hewan peliharaan dengan nama manusia',
+      '…pernah mencoba olahraga ekstrem',
+      '…pernah disangka orang terkenal',
+      '…punya video viral atau kenal yang punya',
+      '…punya emoji favorit yang sering dipakai',
+      '…punya teori konspirasi lucu',
+      '…punya karakter fiksi favorit',
+      '…punya cerita kegagalan perjalanan',
+      '…punya permainan papan atau kartu favorit',
+      '…punya makanan yang nggak akan dimakan sama sekali'
+    ],
+    praises: [
+      { text: 'Bingo! Ulangi lagi — dunia bergantung padamu', effect: null },
+      { text: 'Bagus! Kamu adalah mesin konfeti manusia.', effect: null },
+      { text: 'Whoa — itu pantas mendapatkan parade kecil. Lanjutkan!', effect: 'parade' },
+      { text: 'Amazing — keterampilan bingo-mu sedang trending di sekitar.', effect: 'trending' },
+      { text: 'Itu satu. Kumpulkan seperti camilan langka.', effect: null },
+      { text: 'Kerja bagus. Lebih banyak bingo, kurang tidur!', effect: null },
+      { text: "Hot dang — kamu sedang bergulir. Gulung lebih keras.", effect: 'barrel' },
+      { text: 'Impresif! Hadiah: hak pamer dan vibes', effect: null },
+      { text: 'Kamu menangkap satu — tangkap sisanya seperti Pokémon', effect: 'pokeball' },
+      { text: 'Cantik. Sasaran selanjutnya: dominasi dunia (atau bingo lain)', effect: null },
+      { text: 'Itu jempol dari takdir. Jadi serakah', effect: 'thumb' },
+      { text: 'Ciuman chef. Sajikan bingo lain, tolong', effect: 'chef' },
+      { text: 'Satu bingo sehari menjauhkan kebosanan. Terus kumpulkan!', effect: null },
+      { text: 'Bingo adalah hidangan yang terbaik disajikan berkali-kali', effect: null },
+      { text: 'Kamu pasti masih punya banyak Bingo. Kupikir begitu!', effect: null },
+      { text: 'Itu cuma pemanasan, kan?', effect: null },
+      { text: 'Jangan berhenti sekarang — para dewa Bingo sedang menonton', effect: 'divine' },
+      { text: 'Satu Bingo? Imut', effect: null },
+      { text: 'Kamu baru saja masuk Hall of Fame Bingo. Mungkin.', effect: 'leader' },
+      { text: 'Bingo dibuka kunci. Level berikutnya: Legenda', effect: null },
+      { text: 'Bingo? Lebih seperti Bing-WHOA!', effect: null },
+      { text: 'Itu FACTastrophe… untuk orang lain', effect: null },
+      { text: 'Siapa butuh Google kalau ada KAMU?', effect: null },
+      { text: 'Kamu tidak hanya bermain — kamu membantai fakta', effect: 'slash' },
+      { text: 'Terus — bingo berikutnya ada namamu', effect: null },
+      { text: 'Itu begitu bagus, kita mungkin ganti nama permainan jadi namamu', effect: 'rename' },
+      { text: 'Kamu resmi memasuki arc Bingo \"main character\" mu', effect: 'cinematic' }
+    ],
+    surprises: [
+      'Apa? Sudah lagi?',
+      'Serius? Kamu lagi panas 🔥',
+      'Lagi?! Sisakan untuk yang lain dong.'
     ]
   }
 };
 
-/* Icons */
+/* Simple icons list for tiles */
 const ICONS = [
   { fa:'fa-briefcase', emoji:'🏢' }, { fa:'fa-masks-theater', emoji:'🎤' }, { fa:'fa-earth-americas', emoji:'🌍' },
   { fa:'fa-language', emoji:'🗣️' }, { fa:'fa-star', emoji:'⭐' }, { fa:'fa-person-running', emoji:'🏃' },
@@ -285,25 +636,30 @@ const layoutSel = document.getElementById('layoutSel');
 const charLimitEl = document.getElementById('charLimit');
 const charCountEl = document.getElementById('charCount');
 const pageTitle = document.getElementById('pageTitle');
+const praiseEl = document.getElementById('praise');
+const effectsEl = document.getElementById('effects');
+const surpriseEl = document.getElementById('surprise');
 
 /* App state */
 let state = {
   lang: localStorage.getItem('wtaf-lang') || 'en',
   rows: Number(localStorage.getItem('wtaf-rows') || 4),
   cols: Number(localStorage.getItem('wtaf-cols') || 4),
-  grid: [],            // indices into facts array; length = rows*cols
-  answers: {},         // keyed by tile index
+  grid: [],
+  answers: {},
   started: false,
   randomLeft: 3,
   completedLines: new Set(),
-  bingoScale: 1,
-  winThreshold: 1 // single-line win for all layouts
+  bingoScale: 1, // kept static now
+  winThreshold: 1,
+  praiseHistory: JSON.parse(localStorage.getItem('wtaf-praiseHistory') || '{}') // { name: [idx, ...] }
 };
 
-/* Persistence helpers */
+/* persistence helpers */
 function toSavableState(s){
   const copy = {...s};
   copy.completedLines = Array.from(s.completedLines || []);
+  // don't put DOM nodes in storage
   return copy;
 }
 function fromSavedState(s){
@@ -314,11 +670,13 @@ function fromSavedState(s){
 }
 function saveState(){
   try{
-    localStorage.setItem('wtaf-state', JSON.stringify(toSavableState(state)));
+    const savable = toSavableState(state);
+    localStorage.setItem('wtaf-state', JSON.stringify(savable));
     localStorage.setItem('wtaf-lang', state.lang);
     localStorage.setItem('wtaf-rows', String(state.rows));
     localStorage.setItem('wtaf-cols', String(state.cols));
     localStorage.setItem('wtaf-winThreshold', String(state.winThreshold));
+    localStorage.setItem('wtaf-praiseHistory', JSON.stringify(state.praiseHistory || {}));
   }catch(e){ console.warn('save failed', e); }
 }
 function loadState(){
@@ -331,34 +689,41 @@ function loadState(){
         const size = Number(localStorage.getItem('wtaf-size') || 4);
         state.rows = size; state.cols = size;
       }
+      // praiseHistory already loaded from localStorage above; ensure it's an object
+      state.praiseHistory = state.praiseHistory || JSON.parse(localStorage.getItem('wtaf-praiseHistory') || '{}');
     }
-  }catch(e){}
+  }catch(e){
+    state.praiseHistory = state.praiseHistory || JSON.parse(localStorage.getItem('wtaf-praiseHistory') || '{}');
+  }
 }
 
-/* Helpers */
+/* helpers */
 function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-function safeEscape(str){ if (str===null||str===undefined) return ''; return String(str).replace(/[&<>\"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[s])); }
+function safeEscape(str){ if (str===null||str===undefined) return ''; return String(str).replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 
-/* Layout helpers */
+/* layout helpers */
 function layoutValueFromRowsCols(r,c){ if (r===4 && c===4) return '4x4'; if (r===3 && c===3) return '3x3'; if (r===4 && c===3) return '3x4'; return `${c}x${r}`; }
 function setLayoutByValue(val){
   if (val === '4x4'){ state.rows = 4; state.cols = 4; }
   else if (val === '3x3'){ state.rows = 3; state.cols = 3; }
-  else if (val === '3x4'){ state.rows = 4; state.cols = 3; } // 3 cols, 4 rows -> rows=4, cols=3
+  else if (val === '3x4'){ state.rows = 4; state.cols = 3; }
   else {
     const parts = val.split('x').map(Number);
     if (parts.length===2){ state.cols = parts[0]; state.rows = parts[1]; }
   }
   localStorage.setItem('wtaf-rows', String(state.rows));
   localStorage.setItem('wtaf-cols', String(state.cols));
-  // always single-line win
   state.winThreshold = 1;
 }
 
-/* Grid / Tiles */
+/* grid / tiles */
+function getFacts(){ return (I18N[state.lang] && I18N[state.lang].facts) ? I18N[state.lang].facts : I18N.en.facts; }
+function getPraises(){ return (I18N[state.lang] && I18N[state.lang].praises) ? I18N[state.lang].praises : I18N.en.praises; }
+function getSurprises(){ return (I18N[state.lang] && I18N[state.lang].surprises) ? I18N[state.lang].surprises : I18N.en.surprises; }
+
 function randomiseGrid(){
   const needed = state.rows * state.cols;
-  const facts = (I18N[state.lang] && I18N[state.lang].facts) ? I18N[state.lang].facts : I18N.en.facts;
+  const facts = getFacts();
   const total = facts.length;
   const indices = [...Array(total).keys()];
   shuffleArray(indices);
@@ -369,12 +734,12 @@ function randomiseGrid(){
   renderBoard(); updateProgress(); saveState();
 }
 function tileTextByIndex(idx){
-  const facts = (I18N[state.lang] && I18N[state.lang].facts) ? I18N[state.lang].facts : I18N.en.facts;
+  const facts = getFacts();
   return facts && typeof state.grid[idx] !== 'undefined' && facts[state.grid[idx]] ? String(facts[state.grid[idx]]) : '';
 }
 function tileIconByIndex(idx){ const factIdx = state.grid[idx]; return ICONS[factIdx] || { fa:'fa-circle-question', emoji:'❓' }; }
 
-/* Render board */
+/* render board */
 function renderBoard(){
   const R = state.rows, C = state.cols;
   const totalTiles = R * C;
@@ -405,7 +770,7 @@ function renderBoard(){
   }
 }
 
-/* Modal behavior */
+/* modal behavior */
 let currentIdx = null;
 function onTileClick(idx, fact){
   if (!state.started) return;
@@ -413,7 +778,6 @@ function onTileClick(idx, fact){
   modalFact.textContent = fact;
   nameInput.value = state.answers[idx]?.name || '';
   respInput.value = state.answers[idx]?.resp || '';
-  // set maxlength and charcount
   respInput.maxLength = RESPONSE_CHAR_LIMIT;
   charLimitEl.textContent = RESPONSE_CHAR_LIMIT;
   updateCharCount();
@@ -452,7 +816,7 @@ saveBtn.addEventListener('click', (e)=>{
 });
 cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); } });
 
-/* Bingo lines calculation */
+/* bingo lines calculation */
 function calculateBingoLines(){
   const R = state.rows, C = state.cols;
   const filled = new Set(Object.keys(state.answers).map(Number));
@@ -479,16 +843,108 @@ function calculateBingoLines(){
   return completed;
 }
 
+/* PRAISE & EFFECTS logic */
+let praiseTimer = null;
+function clearPraiseTimer(){ if (praiseTimer) { clearTimeout(praiseTimer); praiseTimer = null; } }
+
+function pickPraiseIndexForPerson(name){
+  const praises = getPraises();
+  if (!name) name = '__anon__';
+  state.praiseHistory = state.praiseHistory || {};
+  const usedArr = state.praiseHistory[name] || [];
+  const used = new Set(usedArr);
+  const all = praises.map((_,i)=>i);
+  const available = all.filter(i => !used.has(i));
+  if (available.length === 0){
+    // reset for this person
+    state.praiseHistory[name] = [];
+    saveState();
+    return pickPraiseIndexForPerson(name);
+  }
+  // slightly increase chance for praises with animation: we'll weight those indices higher
+  const weighted = [];
+  available.forEach(i=>{
+    const p = praises[i];
+    const weight = p.effect ? 3 : 1; // animation phrases are 3x more likely
+    for (let k=0;k<weight;k++) weighted.push(i);
+  });
+  const idx = weighted[Math.floor(Math.random() * weighted.length)];
+  // record used
+  state.praiseHistory[name] = state.praiseHistory[name] || [];
+  state.praiseHistory[name].push(idx);
+  saveState();
+  return idx;
+}
+
+function showPraiseForPerson(name){
+  if (!praiseEl) return;
+  clearPraiseTimer();
+  removeAllEffects();
+
+  const praises = getPraises();
+  const idx = pickPraiseIndexForPerson(name);
+  const phraseObj = praises[idx];
+  const phrase = phraseObj && phrase.text ? phraseObj.text : (phrases[idx] || '');
+  praiseEl.textContent = phrase;
+  praiseEl.classList.remove('hidden');
+  setTimeout(()=> praiseEl.classList.add('visible'), 10);
+
+  // trigger special effect if mapping exists
+  if (phraseObj && phraseObj.effect){ triggerEffectByKey(phraseObj.effect); }
+
+  // auto-dismiss after configured time unless the user clicks it first
+  praiseTimer = setTimeout(()=> {
+    hidePraise();
+  }, PRAISE_AUTO_DISMISS_MS);
+}
+
+function hidePraise(){
+  if (!praiseEl) return;
+  clearPraiseTimer();
+  praiseEl.classList.remove('visible');
+  setTimeout(()=> praiseEl.classList.add('hidden'), 220);
+  setTimeout(()=> removeAllEffects(), 600);
+}
+
+/* clicking the praise hides it immediately */
+praiseEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  hidePraise();
+});
+
+/* effect functions */
+function triggerEffectByKey(key){
+  const map = EFFECT_MAP.find(m=>m.key === key || m.key === (key+'') );
+  if (map) try{ map.fn(); } catch(e){ console.warn('effect failed', e); }
+}
+function removeAllEffects(){
+  effectsEl.innerHTML = '';
+  if (pageTitle.dataset._tempTitle) {
+    pageTitle.textContent = pageTitle.dataset._tempTitle;
+    delete pageTitle.dataset._tempTitle;
+  }
+  document.querySelectorAll('.cinematic').forEach(n=>n.remove());
+  document.querySelectorAll('.clapper').forEach(n=>n.remove());
+}
+function triggerParade(){ const c = document.createElement('div'); c.className = 'parade'; const emojis = ['🎺','🎉','🥁','🪅','🕺']; emojis.forEach(e=>{ const s=document.createElement('span'); s.textContent=e; c.appendChild(s); }); effectsEl.appendChild(c); setTimeout(()=> c.remove(), 5200); }
+function triggerTrendingBadge(){ const el = document.createElement('div'); el.className = 'leaderboard'; el.innerHTML = `<h4>✨ #1 Trending</h4><div style="font-size:13px; opacity:.9;">People are talking about your bingo.</div>`; effectsEl.appendChild(el); setTimeout(()=> el.remove(), 5200); }
+function triggerBarrel(){ const b = document.createElement('div'); b.className = 'barrel'; b.textContent = '🛢️'; effectsEl.appendChild(b); setTimeout(()=> b.remove(), 5200); }
+function triggerPokeball(){ const p = document.createElement('div'); p.className = 'pokeball'; effectsEl.appendChild(p); setTimeout(()=> p.remove(), 5200); }
+function triggerThumbUp(){ const t = document.createElement('div'); t.className = 'thumbup'; t.textContent = '👍'; effectsEl.appendChild(t); setTimeout(()=> t.remove(), 5200); }
+function triggerChefKiss(){ const c = document.createElement('div'); c.className = 'chefkiss'; c.textContent = '👨‍🍳💋'; effectsEl.appendChild(c); setTimeout(()=> c.remove(), 5200); }
+function triggerDivineLight(){ const d = document.createElement('div'); d.className = 'divine'; const eyes = document.createElement('div'); eyes.className = 'glow-eyes'; eyes.textContent = '👀'; effectsEl.appendChild(d); effectsEl.appendChild(eyes); setTimeout(()=> { d.remove(); eyes.remove(); }, 5200); }
+function triggerLeaderboard(){ const el = document.createElement('div'); el.className = 'leaderboard'; el.innerHTML = `<h4>🏆 Bingo Hall of Fame</h4><ul style="margin:0;padding:0;"><li class="you">You — 1,234 pts</li><li>Alex — 1,220 pts</li><li>Jordan — 1,119 pts</li><li>Casey — 1,030 pts</li></ul>`; effectsEl.appendChild(el); setTimeout(()=> el.remove(), 5200); }
+function triggerSwordSlash(){ const s = document.createElement('div'); s.className='slash'; const line = document.createElement('div'); line.className='line'; s.appendChild(line); effectsEl.appendChild(s); setTimeout(()=> s.remove(), 5200); }
+function triggerRenameTitle(){ if (!pageTitle.dataset._tempTitle) pageTitle.dataset._tempTitle = pageTitle.textContent; pageTitle.textContent = "Who the Fact are YOU?!"; setTimeout(()=> { if (pageTitle.dataset._tempTitle) { pageTitle.textContent = pageTitle.dataset._tempTitle; delete pageTitle.dataset._tempTitle; } }, 5200); }
+function triggerCinematic(){ const top = document.createElement('div'); top.className='cinematic'; const bottom = document.createElement('div'); bottom.className='cinematic bottom'; const clap = document.createElement('div'); clap.className='clapper'; clap.textContent='🎬'; document.body.appendChild(top); document.body.appendChild(bottom); document.body.appendChild(clap); setTimeout(()=> { top.remove(); bottom.remove(); clap.remove(); }, 5200); }
+
 /* Progress / bingo */
 function updateProgress(){
   const filled = Object.keys(state.answers).length;
   const total = state.rows * state.cols;
   const lines = calculateBingoLines();
   const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
-
-  let base = `${ui.filled(filled, total)} · ${ui.lines(lines.size)}`;
-  if (state.winThreshold > 1) base += ` · Need ${state.winThreshold} lines`;
-  progressEl.textContent = base;
+  progressEl.textContent = `${ui.filled(filled, total)} · ${ui.lines(lines.size)}`;
 }
 function playClapSound(){
   if (clapAudio && typeof clapAudio.play === 'function'){
@@ -496,28 +952,43 @@ function playClapSound(){
     return;
   }
 }
-function showBingo(){
+
+/* show a bingo for a particular person (doesn't resize bingo) */
+function showBingoForPerson(personName){
   bingoOverlay.classList.add('show');
-  bingoText.style.transform = `scale(${state.bingoScale})`;
+  bingoText.style.transform = `scale(1)`; // fixed size now
   bingoText.textContent = 'BINGO!';
+  // show praise popup for that person
+  showPraiseForPerson(personName);
+  // confetti
   const duration = 1200; const end = Date.now() + duration;
   (function frame(){
-    confetti({ particleCount: 6, spread: 60, startVelocity: 32, origin: { x: Math.random(), y: Math.random()*0.35 }});
+    confetti({ particleCount: 8, spread: 60, startVelocity: 40, origin: { x: Math.random(), y: Math.random()*0.35 }});
     if (Date.now() < end) requestAnimationFrame(frame);
   })();
 }
 bingoOverlay.addEventListener('click', ()=> bingoOverlay.classList.remove('show'));
 
-/* Check for new bingo (single-line threshold) */
+/* NEW: Check for new bingo (fires for every newly completed line)
+   - If multiple lines were completed in one action, trigger celebrations sequentially (2s apart).
+*/
 function checkForNewBingo(){
   const now = calculateBingoLines();
   const prev = (state.completedLines instanceof Set) ? state.completedLines : new Set();
-  const newLines = [...now].filter(i=>!prev.has(i));
-  if (newLines.length){
+  const newLines = [...now].filter(i => !prev.has(i));
+  if (newLines.length > 0) {
     state.completedLines = now;
-    if (now.size >= state.winThreshold && prev.size < state.winThreshold) {
-      state.bingoScale *= 1.5; playClapSound(); showBingo();
-    }
+    // Determine person name to attribute praises to (use the tile that was just filled)
+    const personName = (currentIdx !== null && state.answers[currentIdx] && state.answers[currentIdx].name) ? state.answers[currentIdx].name : '__anon__';
+
+    newLines.forEach((lineIdx, idx) => {
+      // schedule each bingo sequentially (first one at 0ms, next at BASE_BINGO_INTERVAL_MS, etc.)
+      const scheduleBingoAt = idx * BASE_BINGO_INTERVAL_MS;
+      setTimeout(()=> {
+        showBingoForPerson(personName);
+        saveState();
+      }, scheduleBingoAt);
+    });
   }
   updateProgress();
   saveState();
@@ -532,27 +1003,27 @@ randomBtn.addEventListener('click', ()=>{
 });
 
 startBtn.addEventListener('click', ()=>{
-  const ui = I18N[state.lang].ui;
   if (!state.started){
     state.started = true; saveState();
     preHint.style.display = 'none';
     startBtn.classList.remove('primary');
-    startBtn.innerHTML = `↺ ${ui.reset}`;
+    startBtn.querySelector('[data-i18n]')?.setAttribute('data-i18n','reset');
+    startBtn.innerHTML = `↺ Reset`;
     randomBtn.disabled = true;
   } else {
     state.started = false; state.answers = {}; state.completedLines = new Set(); state.bingoScale = 1;
     state.randomLeft = 3; rndLeftEl.textContent = '3';
-    startBtn.classList.add('primary'); startBtn.innerHTML = `▶ ${ui.start}`;
+    startBtn.classList.add('primary'); startBtn.innerHTML = `▶ Start Bingo`;
     randomBtn.disabled = false;
     renderBoard(); updateProgress(); saveState();
   }
 });
 
-/* Dark toggle */
+/* dark toggle */
 function updateDarkToggleLabel(){
   const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
-  if (document.body.classList.contains('dark')) darkToggle.textContent = `☀ ${ui.light || 'Light mode'}`;
-  else darkToggle.textContent = `🌙 ${ui.dark || 'Dark mode'}`;
+  if (document.body.classList.contains('dark')) darkToggle.textContent = ui.lightMode || '☀ Light mode';
+  else darkToggle.textContent = ui.darkMode || '🌙 Dark mode';
 }
 darkToggle.addEventListener('click', ()=>{
   document.body.classList.toggle('dark');
@@ -561,10 +1032,19 @@ darkToggle.addEventListener('click', ()=>{
   updateDarkToggleLabel();
 });
 
-/* Language */
-langSel.addEventListener('change', ()=>{ state.lang = langSel.value; applyLang(); });
+/* language selector change — fixes the broken translation toggle */
+langSel.addEventListener('change', ()=>{
+  state.lang = langSel.value;
+  localStorage.setItem('wtaf-lang', state.lang);
+  // reset answers and regenerate grid in the new language
+  state.answers = {};
+  state.completedLines = new Set();
+  state.randomLeft = 3; rndLeftEl.textContent = String(state.randomLeft);
+  randomiseGrid();
+  applyLang();
+});
 
-/* Layout selector */
+/* layout selector */
 layoutSel.addEventListener('change', ()=>{
   setLayoutByValue(layoutSel.value);
   state.started = false;
@@ -576,48 +1056,57 @@ layoutSel.addEventListener('change', ()=>{
   updateProgress();
 });
 
-/* Font A+/A- */
+/* font size */
 const FONT_MIN = 12, FONT_MAX = 22;
 function getSavedFontSize(){ const v = parseInt(localStorage.getItem('wtaf-fontsize') || '', 10); return Number.isFinite(v) ? v : 16; }
 function setFontSize(px){ const clamped = Math.max(FONT_MIN, Math.min(FONT_MAX, Math.round(px))); document.documentElement.style.setProperty('--ui-font-size', clamped + 'px'); localStorage.setItem('wtaf-fontsize', String(clamped)); }
 document.getElementById('fontInc').addEventListener('click', ()=>{ const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size')||'16',10); setFontSize(cur+1); renderBoard(); });
 document.getElementById('fontDec').addEventListener('click', ()=>{ const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-size')||'16',10); setFontSize(cur-1); renderBoard(); });
 
-/* Boot */
+/* boot */
 loadState();
+state.lang = state.lang || 'en';
 document.body.classList.toggle('dark', localStorage.getItem('wtaf-dark') === '1');
 rndLeftEl.textContent = state.randomLeft;
 setFontSize(getSavedFontSize());
 applyLang();
 if (!Array.isArray(state.grid) || state.grid.length !== state.rows * state.cols) {
-  state.winThreshold = 1; // ensure single-line win on load
-  randomiseGrid();
+  state.winThreshold = 1; randomiseGrid();
 }
-if (state.started){ startBtn.classList.remove('primary'); startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`; randomBtn.disabled = true; }
+if (state.started){ startBtn.classList.remove('primary'); startBtn.innerHTML = `↺ Reset`; randomBtn.disabled = true; }
 
-/* Apply language and UI */
+/* applyLang */
 function applyLang(){
-  langSel.value = state.lang;
-  layoutSel.value = layoutValueFromRowsCols(state.rows, state.cols);
   const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
-  preHint.textContent = ui.prehint;
-  howto.textContent = ui.howto;
-  modalTitle.textContent = ui.add;
-  if (state.started) startBtn.innerHTML = `↺ ${ui.reset}`; else startBtn.innerHTML = `▶ ${ui.start}`;
+  // UI strings
+  document.querySelector('[data-i18n="randomize"]').textContent = ui.randomize || 'Randomise board';
+  const startSpan = startBtn.querySelector('[data-i18n]');
+  if (startSpan) startSpan.textContent = ui.start || 'Start Bingo';
+  preHint.textContent = ui.preHint || '';
+  howto.textContent = ui.howto || '';
+  modalTitle.textContent = ui.modalTitle || '';
+  document.getElementById('nameLabel').textContent = ui.nameLabel || 'Name';
+  document.getElementById('respLabel').textContent = ui.respLabel || 'Response';
+  charLimitEl.textContent = RESPONSE_CHAR_LIMIT;
+  document.getElementById('respHint').textContent = (ui.respHint || 'Max {n} chars').replace('{n}', RESPONSE_CHAR_LIMIT);
+  cancelBtn.textContent = ui.cancel || 'Cancel';
+  saveBtn.textContent = ui.save || 'Save';
   updateDarkToggleLabel();
-  document.title = `Who the Fact Are You? — ${layoutValueFromRowsCols(state.rows, state.cols)} Bingo`;
-  if (pageTitle) pageTitle.textContent = `Who the Fact Are You? (${layoutValueFromRowsCols(state.rows, state.cols)}) 🎉`;
+  // layout select keep same
+  layoutSel.value = layoutValueFromRowsCols(state.rows, state.cols);
+  // update board content
   renderBoard();
   updateProgress();
   saveState();
 }
 
-/* detect FontAwesome (emoji fallback OK) */
+/* detect FontAwesome (optional) */
 function detectFontAwesome(){ try{ if (document.fonts && document.fonts.check("1em 'Font Awesome 6 Free'")) document.body.classList.add('fa-loaded'); else document.body.classList.remove('fa-loaded'); } catch(e){ document.body.classList.remove('fa-loaded'); } }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(detectFontAwesome); else setTimeout(detectFontAwesome, 400);
 
-/* small self-test */
+/* self-test */
 (function runSelfTests(){ console.groupCollapsed('WTFAY self-tests'); const tmp = { completedLines: new Set([1,2,7]) }; const s = JSON.stringify(toSavableState(tmp)); const r = fromSavedState(JSON.parse(s)); console.assert(r.completedLines instanceof Set, 'revived set'); console.assert(r.completedLines.has(7), 'contains 7'); console.groupEnd(); })();
+
 </script>
 </body>
 </html>
