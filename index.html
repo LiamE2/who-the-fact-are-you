@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Who the Fact Are You? — Bingo</title>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-      crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
 <style>
@@ -91,93 +90,61 @@
 
   .bingo-overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.35); z-index:9999; }
   .bingo-overlay.show{ display:flex; }
-  .bingo-text{ font-weight:900; font-size:4rem; color:#fff; text-shadow:0 6px 22px rgba(0,0,0,.55); transform: scale(1); }
+  .bingo-text{ font-weight:900; font-size:4rem; color:#fff; text-shadow:0 6px 22px rgba(0,0,0,.55); transform: scale(1); white-space:nowrap; }
 
-  /* Praise popup */
+  /* Stacked center column: BINGO (top), PRAISE (middle), EFFECTS (bottom) */
+  .center-stack{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:12px; z-index:10000; pointer-events:none; }
   .praise {
-    position:fixed;
-    right:18px;
-    top:18px;
-    z-index:10001;
     background:var(--praise-bg);
     color:var(--praise-color);
-    padding:14px 16px;
+    padding:12px 14px;
     border-radius:12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.18);
     font-weight:800;
-    max-width: 340px;
+    max-width: 92vw;
     cursor: pointer;
-    transform-origin: center;
     transition: transform 180ms cubic-bezier(.2,.9,.3,1), opacity 160ms ease;
     opacity:0;
-    pointer-events:none;
+    pointer-events:auto;
     display:flex;
     align-items:center;
     gap:10px;
   }
-  .praise.visible { opacity:1; transform: translateY(0) scale(1); pointer-events:auto; }
-  .praise.hidden { opacity:0; transform: translateY(-6px) scale(.98); pointer-events:none; }
+  .praise.visible { opacity:1; transform: scale(1); }
+  .praise.hidden { opacity:0; transform: scale(.98); pointer-events:none; }
 
-  /* Surprise popup (kept in DOM but not used as separate when multiple bingos) */
-  .surprise {
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    top: 14px;
-    z-index:10002;
-    background: rgba(20,20,25,0.96);
-    color: #fff;
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-weight:700;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.28);
-    opacity:0; pointer-events:none;
-    transition: opacity 160ms ease, transform 180ms cubic-bezier(.2,.9,.3,1);
-  }
-  .surprise.show { opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
-  .surprise.hide { opacity:0; transform: translateX(-50%) translateY(-6px); pointer-events:none; }
+  /* Effects wrapper sits directly under praise in the stack */
+  .effects-wrap { width:100%; display:flex; justify-content:center; align-items:center; min-height:64px; pointer-events:none; }
+  .effect-item{ position:relative; }
 
-  /* effect / tiny overlays */
-  .effect-layer { position:fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:10000; overflow:visible; }
-  .parade { position: absolute; bottom: 12%; left:-20%; display:flex; gap:12px; transform: translateX(0); animation: parade-move 6s linear forwards; }
+  /* Slow, looped animations (~5s) */
+  @keyframes parade-move { 0% { transform: translateX(-45vw); } 100% { transform: translateX(45vw); } }
+  @keyframes barrel-roll { 0%{ transform: translateX(-45vw) rotate(0deg) } 100%{ transform: translateX(45vw) rotate(720deg) } }
+  @keyframes pokeball-throw { 0% { transform: translateX(-45vw) rotate(0deg) } 100% { transform: translateX(45vw) rotate(360deg) } }
+  @keyframes thumb-breathe { 0%{ transform:scale(.8) } 50%{ transform:scale(1.05) } 100%{ transform:scale(.8) } }
+  @keyframes chef-breathe { 0%{ transform:scale(.85) } 50%{ transform:scale(1.05) } 100%{ transform:scale(.85) } }
+  @keyframes divine-fade { 0%{ opacity:.2 } 50%{ opacity:.95 } 100%{ opacity:.2 } }
+  @keyframes eyes-pop { 0%{ opacity:.3; transform:scale(.9) } 50%{ opacity:1; transform:scale(1.06) } 100%{ opacity:.3; transform:scale(.9) } }
+  @keyframes slash-fade { 0%{ opacity:0 } 20%{ opacity:1 } 80%{ opacity:1 } 100%{ opacity:0 } }
+  @keyframes clapper-pop { 0%{ opacity:0; transform:translateY(-20px) } 50%{ opacity:1; transform:translateY(0) } 100%{ opacity:0; transform:translateY(-20px) } }
+
+  .parade { display:flex; gap:14px; animation: parade-move 5s linear infinite; }
   .parade span { font-size: 28px; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.12)); }
-  @keyframes parade-move { to { transform: translateX(140vw); } }
 
-  .barrel { position:absolute; top:45%; left:-10%; font-size:40px; transform: rotate(0deg); animation: barrel-roll 2.2s linear forwards; }
-  @keyframes barrel-roll { to { transform: translateX(140vw) rotate(1080deg); } }
+  .barrel { font-size:40px; animation: barrel-roll 5s linear infinite; }
+  .pokeball { font-size:40px; animation: pokeball-throw 5s ease-in-out infinite; display:inline-block; }
+  .thumbup { font-size:86px; animation: thumb-breathe 5s ease-in-out infinite; }
+  .chefkiss { font-size:48px; animation: chef-breathe 5s ease-in-out infinite; }
+  .divine { width:240px; height:120px; background: radial-gradient( circle at 50% 50%, rgba(255,255,210,0.6), rgba(255,255,210,0.15) 40%, transparent 75%); opacity:.9; animation: divine-fade 5s linear infinite; border-radius:16px; position:relative; }
+  .glow-eyes { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:40px; animation: eyes-pop 5s ease-in-out infinite; }
+  .leaderboard { background:#fff; color:#111; padding:10px 12px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.18); width:min(280px,90vw); text-align:left; }
+  .slash { width:260px; height:20px; position:relative; }
+  .slash .line { position:absolute; left:0; top:7px; height:6px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95), rgba(255,255,255,0)); width:100%; mix-blend-mode:screen; filter: drop-shadow(0 8px 18px rgba(255,255,255,0.15)); animation: slash-fade 5s linear infinite; }
+  .clapper { font-size:42px; animation: clapper-pop 5s ease-in-out infinite; }
 
-  .pokeball { position:absolute; top:30%; left: -8%; width:48px; height:48px; border-radius:50%; background: radial-gradient(circle at 50% 35%, #fff 0 60%, #fff 100%); border:4px solid #000; overflow:hidden; transform: translateX(0) scale(1); animation: pokeball-throw 1.6s cubic-bezier(.2,.9,.2,1) forwards; }
-  .pokeball::before{ content:''; position:absolute; left:0; top:0; width:100%; height:50%; background:#d22; }
-  .pokeball::after{ content:''; position:absolute; left:0; top:50%; width:100%; height:50%; background:#fff; }
-  @keyframes pokeball-throw { 20% { transform: translate(22vw,-18vh) scale(.9) rotate(20deg); } 50% { transform: translate(50vw,-30vh) scale(.8) rotate(60deg); } 80%{ transform: translate(78vw,-10vh) scale(.85) rotate(100deg); } 100%{ transform: translate(80vw,0) scale(.6) rotate(140deg); opacity:0; } }
+  .cinematic-bar { width:100vw; height:60px; background:#000; opacity:.9; }
 
-  .thumbup { position:absolute; right:10%; top:35%; font-size:86px; transform: scale(.2); opacity:0; animation: thumb-pop .6s ease-out forwards; }
-  @keyframes thumb-pop { to { transform: scale(1); opacity:1; } }
-
-  .chefkiss { position:absolute; top:32%; left:50%; transform:translateX(-50%) scale(.6); opacity:0; font-size:48px; animation: chef-pop .8s ease forwards; }
-  @keyframes chef-pop { 30% { opacity:1; transform:translateX(-50%) scale(1); } 100% { opacity:0; transform:translateX(-50%) scale(1.05); } }
-
-  .divine { position:absolute; inset:0; background: radial-gradient( circle at 50% 20%, rgba(255,255,210,0.6), rgba(255,255,210,0.15) 10%, transparent 40%); opacity:0; animation: divine-pop 1s ease forwards; pointer-events:none; }
-  @keyframes divine-pop { from { opacity:0; } to { opacity:1; } }
-
-  .glow-eyes { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:56px; opacity:0; animation: eyes-pop 1s forwards; }
-  @keyframes eyes-pop { 0%{ opacity:0; transform:translate(-50%,-50%) scale(.6) } 40%{ opacity:1; transform:translate(-50%,-50%) scale(1.05) } 100%{ opacity:0; transform:translate(-50%,-50%) scale(1.15) } }
-
-  .leaderboard { position:fixed; right:20px; top:80px; background: #fff; color:#111; padding:10px 12px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.18); width:200px; text-align:left; pointer-events:none; animation: fadein 320ms ease; z-index:10002; }
-  .leaderboard h4{ margin:0 0 6px; font-size:14px; }
-  .leaderboard li{ list-style:none; padding:6px 0; border-bottom:1px solid #eee; }
-  .leaderboard li.you{ font-weight:900; color:var(--accent); background:linear-gradient(90deg, rgba(255,240,220,0.5), transparent); padding:6px; border-radius:6px; }
-
-  .slash { position:absolute; left:-20%; top:-10%; width:140%; height:140%; pointer-events:none; transform: rotate(-18deg); }
-  .slash .line { position:absolute; left:0; top:45%; height:6px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95), rgba(255,255,255,0)); width:0; animation: slash-anim 420ms ease forwards; mix-blend-mode:screen; filter: drop-shadow(0 8px 18px rgba(255,255,255,0.15)); }
-  @keyframes slash-anim { 100%{ width:140%; } }
-
-  .clapper { position:fixed; left:50%; top:20%; transform:translateX(-50%) translateY(-200%); z-index:10003; font-size:42px; animation: clapper-drop 700ms forwards; }
-  @keyframes clapper-drop { 50%{ transform:translateX(-50%) translateY(6%); } 100%{ transform:translateX(-50%) translateY(12%); opacity:1; } }
-  .cinematic { position: fixed; left:0; right:0; height:80px; background:#000; top:-80px; z-index:10002; animation: cinematic-in 400ms forwards; }
-  .cinematic.bottom { top:auto; bottom:-80px; animation: cinematic-in-bottom 400ms forwards; }
-  @keyframes cinematic-in { to { top:0; } }
-  @keyframes cinematic-in-bottom { to { bottom:0; } }
+  footer{ padding:0.5rem 1rem 1rem; display:flex; justify-content:space-between; gap:0.5rem; color:var(--muted); font-size:0.9rem; }
 
   @media (max-width:760px){
     header{ padding:0.5rem 0.75rem; gap:0.5rem; }
@@ -187,16 +154,14 @@
     .tile{ padding:0.625rem 0.625rem 2.5rem 0.625rem; min-height:5.75rem; }
     .bingo-text{ font-size:3rem; }
     .modal input, .modal textarea{ font-size:16px; }
-    .praise{ left: 50%; right: auto; transform: translateX(-50%); top: 12px; max-width: 92%; }
-    .leaderboard { right:8px; top:70px; width:160px; }
   }
 </style>
 </head>
 <body>
   <div class="app-wrapper" id="app">
     <header>
-      <img class="logo" src="https://tse2.mm.bing.net/th/id/OIP.vB2_MMCK6wxXLJRR_2APTgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Engage Squared logo"
-           onerror="this.src='https://via.placeholder.com/120x40?text=Engage+Squared'"/>
+      <img class="logo" src="https://tse2.mm.bing.net/th/id/OIP.vB2_MMCK6wxXLJRR_2APTgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Logo"
+           onerror="this.src='https://via.placeholder.com/120x40?text=Logo'"/>
       <div class="brand">
         <div class="subtitle" id="subtitle">ENGAGE SQUARED</div>
         <h1 class="title" id="pageTitle">Who the Fact Are You? 🎉</h1>
@@ -215,7 +180,6 @@
       </div>
 
       <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; margin-left:8px;">
-        <!-- layout selector -->
         <label for="layoutSel" class="hint" style="display:inline-flex; align-items:center; gap:0.375rem;">
           <select id="layoutSel" class="btn" aria-label="Board layout">
             <option value="4x4">4×4</option>
@@ -248,14 +212,14 @@
     </footer>
   </div>
 
-  <!-- Praise popup (hidden by default) -->
-  <div id="praise" class="praise hidden" role="button" aria-live="polite" title="Click to dismiss"></div>
-
-  <!-- Surprise popup shown before subsequent bingos -->
-  <div id="surprise" class="surprise hide" aria-hidden="true"></div>
-
-  <!-- effect container -->
-  <div id="effects" class="effect-layer" aria-hidden="true"></div>
+  <!-- Center stack: BINGO (top), Praise (middle), Effects (bottom) -->
+  <div class="bingo-overlay" id="bingoOverlay" aria-hidden="true">
+    <div class="center-stack" id="centerStack">
+      <div class="bingo-text" id="bingoText">BINGO!</div>
+      <div id="praise" class="praise hidden" role="button" aria-live="polite" title="Click to dismiss"></div>
+      <div class="effects-wrap"><div id="effects" class="effect-item"></div></div>
+    </div>
+  </div>
 
   <dialog class="modal" id="entryModal">
     <form method="dialog" class="inner" onsubmit="return false;">
@@ -279,33 +243,11 @@
     </form>
   </dialog>
 
-  <div class="bingo-overlay" id="bingoOverlay"><div class="bingo-text" id="bingoText">BINGO!</div></div>
-
-  <audio id="clapAudio" preload="auto" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_b4a41e8d27.mp3?filename=small-crowd-clapping-6695.mp3"></audio>
-
 <script>
 /* Config */
-const RESPONSE_CHAR_LIMIT = 60; // per-response character cap
-const PRAISE_AUTO_DISMISS_MS = 10_000; // auto-dismiss after 10s
-const BASE_BINGO_INTERVAL_MS = 2000; // 2 seconds between bingos when multiple completed
-const SURPRISE_DURATION_MS = 1200; // how long surprise popup shows (it appears before the next bingo)
+const RESPONSE_CHAR_LIMIT = 60;
 
-/* mapping for special effects used by effectKey values */
-const EFFECT_MAP = [
-  { key: 'parade',   fn: triggerParade },
-  { key: 'trending', fn: triggerTrendingBadge },
-  { key: 'barrel',   fn: triggerBarrel },
-  { key: 'pokeball', fn: triggerPokeball },
-  { key: 'thumb',    fn: triggerThumbUp },
-  { key: 'chef',     fn: triggerChefKiss },
-  { key: 'divine',   fn: triggerDivineLight },
-  { key: 'leader',   fn: triggerLeaderboard },
-  { key: 'slash',    fn: triggerSwordSlash },
-  { key: 'rename',   fn: triggerRenameTitle },
-  { key: 'cinematic',fn: triggerCinematic }
-];
-
-/* i18n — UI strings, facts, praises, surprises for each supported language */
+/* I18N — full facts + praises across languages */
 const I18N = {
   en: {
     ui: {
@@ -395,20 +337,16 @@ const I18N = {
       { text: 'Keep going — the next one’s got your name on it', effect: null },
       { text: 'That was so good, we’re renaming the game after you', effect: 'rename' },
       { text: 'You’ve officially entered your ‘main character’ Bingo arc', effect: 'cinematic' }
-    ],
-    surprises: [
-      'What? Another one already?',
-      "Seriously? You're on 🔥",
-      "Again?! Save some for the rest of us."
     ]
   },
+
   ja: {
     ui: {
       randomize: 'ボードをシャッフル',
       start: 'ビンゴ開始',
       reset: '↺ リセット',
       preHint: '開始前に最大3回シャッフルできます。',
-      howto: 'タイルをタップして名前と短い回答を入力します。列を埋めてBINGOを出そう！',
+      howto: 'タイルをタップして名前と短い回答を入力。列を埋めてBINGO！',
       modalTitle: '名前と回答を追加',
       nameLabel: '名前',
       respLabel: '回答',
@@ -421,90 +359,79 @@ const I18N = {
       lines: (n) => `${n} ビンゴライン`
     },
     facts: [
-      '…その会社で10年以上働いている',
-      '…公に披露した隠れた才能がある',
-      '…5か国以上に旅行したことがある',
-      '…2つ以上の言語を話せる',
+      '…会社で10年以上働いている',
+      '…隠れた特技があり人前で披露したことがある',
+      '…5か国以上を旅行したことがある',
+      '…2言語以上を話せる',
       '…有名人に会ったことがある',
-      '…マラソンを完走したことがある',
+      '…マラソン完走や大きなフィットネス挑戦を達成した',
       '…犬や猫以外のペットを飼っている',
-      '…3つ以上の都市に住んだことがある',
-      '…あなたと同じ誕生月である',
-      '…全く違う業界で働いていたことがある',
-      '…サイドハッスルや情熱的なプロジェクトがある',
-      '…入社して6か月未満である',
-      '…独特な趣味を持っている（例：養蜂、陶芸）',
+      '…3都市以上に住んだことがある',
+      '…あなたと同じ誕生月',
+      '…まったく別の業界で働いていたことがある',
+      '…副業や情熱プロジェクトを持っている',
+      '…入社して6か月未満',
+      '…ユニークな趣味がある（例：養蜂、陶芸、フェンシング）',
       '…コーヒーを飲んだことがない',
-      '…テレビやラジオに出演したことがある',
-      '…双子であるか、双子がいる',
-      '…スカイダイビングやバンジージャンプをしたことがある',
-      '…話のあるタトゥーを持っている',
-      '…先月コンサートに行った',
-      '…今年20冊以上読んだ',
-      '…他国からリモートで働いたことがある',
-      '…珍しいコレクションを持っている',
-      '…舞台作品に参加したことがある',
-      '…今でも呼ばれているニックネームがある',
-      '…賞やコンペに勝ったことがある',
+      '…テレビやラジオに出たことがある',
+      '…双子、または双子の兄弟姉妹がいる',
+      '…スカイダイビングやバンジーをしたことがある',
+      '…ストーリーのあるタトゥーがある',
+      '…先月ライブやコンサートに行った',
+      '…今年20冊以上の本を読んだ',
+      '…海外からリモート勤務をした',
+      '…ちょっと変わったコレクションがある',
+      '…舞台や演劇に参加したことがある',
+      '…今も使っているニックネームがある',
+      '…コンテストや賞で受賞経験がある',
       '…おすすめのポッドキャストがある',
-      '…やり遂げたバケットリストがある',
-      '…カラオケの定番曲がある',
-      '…有名人の物真似ができる',
-      '…変な食べ物の組み合わせが好き',
-      '…ペットに人名をつけている',
-      '…危険なスポーツを経験したことがある',
-      '…有名人に間違われたことがある',
-      '…バイラル動画を持っているか、知っている',
-      '…よく使う絵文字がある',
-      '…面白い陰謀論を知っている（冗談で）',
-      '…共感する架空のキャラクターがいる',
+      '…バケットリストを一つ達成した',
+      '…定番のカラオケ曲がある',
+      '…その場で芸能人のモノマネができる',
+      '…変わった好きな食べ合わせがある（そして譲らない）',
+      '…人の名前のペットを飼っている',
+      '…エクストリームスポーツに挑戦した（生還）',
+      '…有名人に間違えられたことがある',
+      '…バズったTikTok/リールがある（または知人にいる）',
+      '…つい多用してしまうお気に入り絵文字がある',
+      '…好きな陰謀論がある（あくまで娯楽として）',
+      '…感情移入できるお気に入りの架空キャラがいる',
       '…旅の失敗談がある',
-      '…好きなボードゲームがある',
-      '…絶対に食べない食べ物がある'
+      '…お気に入りのボードゲーム／カードゲームがある',
+      '…絶対に食べないと決めている食べ物がある'
     ],
     praises: [
-      { text: 'ビンゴ！もう一回やってください — 世界がそれにかかっている', effect: null },
-      { text: 'いいね！あなたは人間コンフェッティマシンだ。', effect: null },
-      { text: 'おお — 小さなパレードに値する！続けて！', effect: 'parade' },
-      { text: 'すごい — あなたのビンゴスキルがローカルでトレンド入り中。', effect: 'trending' },
-      { text: 'それが一つ。レアなおやつのように集めよう。', effect: null },
-      { text: '素晴らしい。もっとビンゴを、睡眠はほどほどに！', effect: null },
-      { text: 'すごい — ビンゴが続いている。もっと転がせ。', effect: 'barrel' },
-      { text: '見事！報酬：自慢と良い雰囲気', effect: null },
-      { text: '捕まえた — 残りもポケモンのように捕まえよう', effect: 'pokeball' },
-      { text: '美しい出来栄え。次の目標：世界征服（またはもう一つのビンゴ）', effect: null },
-      { text: '運命からの親指アップ。貪欲になれ', effect: 'thumb' },
-      { text: 'シェフのキス。もう一つのビンゴをお願いします', effect: 'chef' },
-      { text: 'ビンゴは退屈を遠ざける一皿だ。集め続けよう！', effect: null },
-      { text: 'ビンゴは何度も提供されるべき料理だ', effect: null },
-      { text: 'まだまだビンゴがある。感じてる！', effect: null },
-      { text: 'これはウォームアップだったのかな？', effect: null },
-      { text: '今やめないで — ビンゴの神々が見ている', effect: 'divine' },
-      { text: '一つのビンゴ？可愛い', effect: null },
-      { text: 'ビンゴ殿堂入りを果たしたかも。', effect: 'leader' },
-      { text: 'ビンゴ解除。次のレベル：伝説', effect: null },
-      { text: 'ビンゴ？むしろビング-ワオ！', effect: null },
-      { text: 'それはFACTastrophe… 他の人にとって', effect: null },
-      { text: 'Googleよりあなたがいる', effect: null },
-      { text: 'ただ遊んでいるだけじゃない — あなたは事実を斬っている', effect: 'slash' },
-      { text: '続けて — 次はあなたの名前がある', effect: null },
-      { text: 'あまりに良かった、ゲーム名をあなたの名前に変えるかも', effect: 'rename' },
-      { text: 'あなたは公式に「主人公」ビンゴアークに突入した', effect: 'cinematic' }
-    ],
-    surprises: [
-      'え？もう一つ？',
-      '本当？止まらないね🔥',
-      'また？みんなのために少し残しておいて！'
+      { text: 'ビンゴ！もう一回いこう — 世界があなたにかかってる', effect: null },
+      { text: 'ナイス！あなたは人間コンフェッティマシンだ', effect: null },
+      { text: 'おおっ — 小さなパレード案件！そのまま続けて！', effect: 'parade' },
+      { text: 'すごい — あなたのビンゴがローカルでトレンド入り中', effect: 'trending' },
+      { text: 'まずは1つ。レアなお菓子みたいに集めよう', effect: null },
+      { text: 'いい感じ。ビンゴを増やして睡眠はほどほどに！', effect: null },
+      { text: '熱い！ビンゴが転がってる。もっと転がせ', effect: 'barrel' },
+      { text: 'お見事！ご褒美：ドヤ顔と良いバイブス', effect: null },
+      { text: '1つ捕まえた — 残りもポケモンのように捕獲だ', effect: 'pokeball' },
+      { text: '完璧。次の目標：世界征服（か、もう一回ビンゴ）', effect: null },
+      { text: '運命からの👍。強欲にいこう', effect: 'thumb' },
+      { text: 'シェフのキス。ビンゴおかわりお願いします', effect: 'chef' },
+      { text: 'ビンゴは退屈退散の一皿。集め続けよう！', effect: null },
+      { text: '今やめるな — ビンゴの神々が見ている', effect: 'divine' },
+      { text: 'ビンゴ殿堂入り…かもしれない', effect: 'leader' },
+      { text: 'あなたの「主人公ビンゴ編」が始まった', effect: 'cinematic' },
+      { text: 'Googleより君？ありえる', effect: null },
+      { text: 'プレイしてるだけじゃない — ファクト斬りだ', effect: 'slash' },
+      { text: 'その調子！次の1本はあなたの名前入り', effect: null },
+      { text: '良すぎてゲーム名を君に改名するかも', effect: 'rename' }
     ]
   },
+
   id: {
     ui: {
       randomize: 'Acak papan',
       start: 'Mulai Bingo',
       reset: '↺ Reset',
-      preHint: 'Anda dapat mengacak hingga 3× sebelum memulai.',
-      howto: 'Ketuk ubin untuk menambahkan nama & jawaban singkat. Isi baris untuk mendapatkan BINGO!',
-      modalTitle: 'Tambahkan nama & jawaban',
+      preHint: 'Anda dapat mengacak hingga 3× sebelum mulai.',
+      howto: 'Ketuk ubin lalu tambahkan nama & jawaban singkat. Isi baris untuk dapat BINGO!',
+      modalTitle: 'Tambah nama & jawaban',
       nameLabel: 'Nama',
       respLabel: 'Jawaban',
       respHint: 'Maks {n} karakter',
@@ -516,85 +443,80 @@ const I18N = {
       lines: (n) => `${n} baris bingo`
     },
     facts: [
-      '…telah bekerja di perusahaan lebih dari 10 tahun',
-      '…memiliki bakat tersembunyi yang pernah ditampilkan',
-      '…pernah bepergian ke lebih dari 5 negara',
-      '…berbicara lebih dari dua bahasa',
+      '…sudah bekerja di perusahaan lebih dari 10 tahun',
+      '…punya bakat tersembunyi dan pernah tampil di depan umum',
+      '…pernah berkunjung ke lebih dari 5 negara',
+      '…bisa berbicara lebih dari dua bahasa',
       '…pernah bertemu orang terkenal',
-      '…pernah menyelesaikan maraton atau tantangan kebugaran',
-      '…memiliki hewan peliharaan selain anjing atau kucing',
+      '…menyelesaikan maraton atau tantangan kebugaran besar',
+      '…memiliki peliharaan selain anjing atau kucing',
       '…pernah tinggal di lebih dari tiga kota',
-      '…punya bulan ulang tahun yang sama denganmu',
-      '…pernah bekerja di industri yang benar-benar berbeda',
-      '…punya side hustle atau proyek sampingan',
-      '…bergabung kurang dari 6 bulan',
-      '…punya hobi unik (mis: beternak lebah, tembikar)',
+      '…punya bulan lahir yang sama denganmu',
+      '…pernah bekerja di industri yang sangat berbeda',
+      '…punya pekerjaan sampingan atau proyek passion',
+      '…bergabung kurang dari 6 bulan yang lalu',
+      '…punya hobi unik (mis. beternak lebah, tembikar, anggar)',
       '…tidak pernah minum kopi',
       '…pernah tampil di TV atau radio',
-      '…kembar atau punya saudara kembar',
+      '…adalah anak kembar atau punya kembaran',
       '…pernah terjun payung atau bungee jumping',
-      '…punya tato dengan cerita',
-      '…pernah menghadiri konser bulan lalu',
-      '…membaca lebih dari 20 buku tahun ini',
-      '…pernah bekerja jarak jauh dari negara lain',
-      '…punya koleksi yang tidak biasa',
+      '…punya tato dengan cerita di baliknya',
+      '…baru-baru ini nonton konser',
+      '…tahun ini membaca lebih dari 20 buku',
+      '…pernah kerja jarak jauh dari luar negeri',
+      '…mengoleksi sesuatu yang tidak biasa',
       '…pernah ikut produksi teater',
-      '…punya julukan yang masih dipakai',
+      '…punya panggilan yang masih dipakai',
       '…pernah menang kompetisi atau penghargaan',
-      '…punya podcast favorit yang direkomendasikan',
-      '…mencapai salah satu item bucket list',
+      '…punya podcast favorit untuk direkomendasikan',
+      '…sudah mencoret satu item dari bucket list',
       '…punya lagu karaoke andalan',
-      '…bisa meniru selebriti spontan',
+      '…bisa menirukan selebritas secara spontan',
       '…punya kombinasi makanan aneh yang disukai',
       '…punya hewan peliharaan dengan nama manusia',
-      '…pernah mencoba olahraga ekstrem',
+      '…pernah mencoba olahraga ekstrem (dan selamat)',
       '…pernah disangka orang terkenal',
-      '…punya video viral atau kenal yang punya',
+      '…punya TikTok/Reel viral (atau kenal yang punya)',
       '…punya emoji favorit yang sering dipakai',
-      '…punya teori konspirasi lucu',
-      '…punya karakter fiksi favorit',
-      '…punya cerita kegagalan perjalanan',
-      '…punya permainan papan atau kartu favorit',
-      '…punya makanan yang nggak akan dimakan sama sekali'
+      '…punya teori konspirasi favorit (buat seru-seruan)',
+      '…punya karakter fiksi favorit yang relate',
+      '…punya kisah gagal perjalanan',
+      '…punya board game atau card game favorit',
+      '…ada makanan yang pantang dimakan kapan pun'
     ],
     praises: [
       { text: 'Bingo! Ulangi lagi — dunia bergantung padamu', effect: null },
-      { text: 'Bagus! Kamu adalah mesin konfeti manusia.', effect: null },
-      { text: 'Whoa — itu pantas mendapatkan parade kecil. Lanjutkan!', effect: 'parade' },
-      { text: 'Amazing — keterampilan bingo-mu sedang trending di sekitar.', effect: 'trending' },
-      { text: 'Itu satu. Kumpulkan seperti camilan langka.', effect: null },
-      { text: 'Kerja bagus. Lebih banyak bingo, kurang tidur!', effect: null },
-      { text: "Hot dang — kamu sedang bergulir. Gulung lebih keras.", effect: 'barrel' },
-      { text: 'Impresif! Hadiah: hak pamer dan vibes', effect: null },
-      { text: 'Kamu menangkap satu — tangkap sisanya seperti Pokémon', effect: 'pokeball' },
-      { text: 'Cantik. Sasaran selanjutnya: dominasi dunia (atau bingo lain)', effect: null },
-      { text: 'Itu jempol dari takdir. Jadi serakah', effect: 'thumb' },
-      { text: 'Ciuman chef. Sajikan bingo lain, tolong', effect: 'chef' },
-      { text: 'Satu bingo sehari menjauhkan kebosanan. Terus kumpulkan!', effect: null },
-      { text: 'Bingo adalah hidangan yang terbaik disajikan berkali-kali', effect: null },
-      { text: 'Kamu pasti masih punya banyak Bingo. Kupikir begitu!', effect: null },
-      { text: 'Itu cuma pemanasan, kan?', effect: null },
-      { text: 'Jangan berhenti sekarang — para dewa Bingo sedang menonton', effect: 'divine' },
-      { text: 'Satu Bingo? Imut', effect: null },
-      { text: 'Kamu baru saja masuk Hall of Fame Bingo. Mungkin.', effect: 'leader' },
-      { text: 'Bingo dibuka kunci. Level berikutnya: Legenda', effect: null },
-      { text: 'Bingo? Lebih seperti Bing-WHOA!', effect: null },
-      { text: 'Itu FACTastrophe… untuk orang lain', effect: null },
+      { text: 'Mantap! Kamu mesin konfeti manusia.', effect: null },
+      { text: 'Whoa — pantas dapat parade mini. Lanjut!', effect: 'parade' },
+      { text: 'Luar biasa — skill bingomu lagi trending lokal.', effect: 'trending' },
+      { text: 'Satu tercapai. Kumpulkan seperti camilan langka.', effect: null },
+      { text: 'Kerja solid. Lebih banyak bingo, kurang tidur!', effect: null },
+      { text: 'Panas! Kamu lagi bergulir. Gulir lebih kencang.', effect: 'barrel' },
+      { text: 'Keren! Hadiahnya: hak pamer & good vibes', effect: null },
+      { text: 'Dapat satu — tangkap sisanya seperti Pokémon', effect: 'pokeball' },
+      { text: 'Indah! Target berikut: dominasi dunia (atau bingo lagi)', effect: null },
+      { text: '👍 dari takdir. Jadi lebih serakah.', effect: 'thumb' },
+      { text: 'Ciuman chef. Tambah satu bingo lagi ya', effect: 'chef' },
+      { text: 'Satu bingo sehari usir bosan. Terus kumpulkan!', effect: null },
+      { text: 'Bingo terbaik disajikan berkali-kali', effect: null },
+      { text: 'Masih banyak bingo dalam dirimu. Terasa!', effect: null },
+      { text: 'Baru pemanasan kan?', effect: null },
+      { text: 'Jangan berhenti — dewa-dewa Bingo memperhatikan', effect: 'divine' },
+      { text: 'Satu bingo? Imut.', effect: null },
+      { text: 'Kamu masuk Hall of Fame Bingo. Mungkin.', effect: 'leader' },
+      { text: 'Bingo terbuka. Level berikutnya: Legenda', effect: null },
+      { text: 'Bingo? Lebih tepat Bing-WHOA!', effect: null },
+      { text: 'Itu FACTastrophe… untuk yang lain', effect: null },
       { text: 'Siapa butuh Google kalau ada KAMU?', effect: null },
-      { text: 'Kamu tidak hanya bermain — kamu membantai fakta', effect: 'slash' },
-      { text: 'Terus — bingo berikutnya ada namamu', effect: null },
-      { text: 'Itu begitu bagus, kita mungkin ganti nama permainan jadi namamu', effect: 'rename' },
-      { text: 'Kamu resmi memasuki arc Bingo \"main character\" mu', effect: 'cinematic' }
-    ],
-    surprises: [
-      'Apa? Sudah lagi?',
-      'Serius? Kamu lagi panas 🔥',
-      'Lagi?! Sisakan untuk yang lain dong.'
+      { text: 'Bukan sekadar main — kamu membabat fakta', effect: 'slash' },
+      { text: 'Teruskan — yang berikutnya atas namamu', effect: null },
+      { text: 'Keren banget, game-nya kami ubah jadi versi kamu', effect: 'rename' },
+      { text: 'Kamu resmi masuk arc “main character” Bingomu', effect: 'cinematic' }
     ]
   }
 };
 
-/* Simple icons list for tiles */
+/* icons (keep emoji fallback solid) */
 const ICONS = [
   { fa:'fa-briefcase', emoji:'🏢' }, { fa:'fa-masks-theater', emoji:'🎤' }, { fa:'fa-earth-americas', emoji:'🌍' },
   { fa:'fa-language', emoji:'🗣️' }, { fa:'fa-star', emoji:'⭐' }, { fa:'fa-person-running', emoji:'🏃' },
@@ -629,18 +551,16 @@ const modalFact = document.getElementById('modalFact');
 const modalTitle = document.getElementById('modalTitle');
 const cancelBtn = document.getElementById('cancelBtn');
 const saveBtn = document.getElementById('saveBtn');
-const bingoOverlay = document.getElementById('bingoOverlay');
-const bingoText = document.getElementById('bingoText');
-const clapAudio = document.getElementById('clapAudio');
 const layoutSel = document.getElementById('layoutSel');
 const charLimitEl = document.getElementById('charLimit');
 const charCountEl = document.getElementById('charCount');
 const pageTitle = document.getElementById('pageTitle');
+const bingoOverlay = document.getElementById('bingoOverlay');
+const bingoText = document.getElementById('bingoText');
 const praiseEl = document.getElementById('praise');
 const effectsEl = document.getElementById('effects');
-const surpriseEl = document.getElementById('surprise');
 
-/* App state */
+/* state */
 let state = {
   lang: localStorage.getItem('wtaf-lang') || 'en',
   rows: Number(localStorage.getItem('wtaf-rows') || 4),
@@ -650,58 +570,43 @@ let state = {
   started: false,
   randomLeft: 3,
   completedLines: new Set(),
-  bingoScale: 1, // kept static now
-  winThreshold: 1,
-  praiseHistory: JSON.parse(localStorage.getItem('wtaf-praiseHistory') || '{}') // { name: [idx, ...] }
+  // per-round praise usage (to avoid repeats in the same round)
+  roundPraiseUsed: [],
+  justShownAt: 0
 };
 
-/* persistence helpers */
-function toSavableState(s){
-  const copy = {...s};
-  copy.completedLines = Array.from(s.completedLines || []);
-  // don't put DOM nodes in storage
-  return copy;
-}
-function fromSavedState(s){
-  if (!s) return null;
-  const revived = {...s};
-  revived.completedLines = new Set(Array.isArray(s.completedLines) ? s.completedLines : []);
-  return revived;
-}
+/* persistence */
 function saveState(){
   try{
-    const savable = toSavableState(state);
-    localStorage.setItem('wtaf-state', JSON.stringify(savable));
+    const copy = {...state};
+    copy.completedLines = Array.from(state.completedLines);
+    localStorage.setItem('wtaf-state', JSON.stringify(copy));
     localStorage.setItem('wtaf-lang', state.lang);
     localStorage.setItem('wtaf-rows', String(state.rows));
     localStorage.setItem('wtaf-cols', String(state.cols));
-    localStorage.setItem('wtaf-winThreshold', String(state.winThreshold));
-    localStorage.setItem('wtaf-praiseHistory', JSON.stringify(state.praiseHistory || {}));
-  }catch(e){ console.warn('save failed', e); }
+  }catch(e){}
 }
 function loadState(){
   try{
-    const s = JSON.parse(localStorage.getItem('wtaf-state'));
-    const revived = fromSavedState(s);
-    if (revived) {
-      state = {...state, ...revived};
-      if (!state.rows || !state.cols) {
-        const size = Number(localStorage.getItem('wtaf-size') || 4);
-        state.rows = size; state.cols = size;
-      }
-      // praiseHistory already loaded from localStorage above; ensure it's an object
-      state.praiseHistory = state.praiseHistory || JSON.parse(localStorage.getItem('wtaf-praiseHistory') || '{}');
+    const s = JSON.parse(localStorage.getItem('wtaf-state') || '{}');
+    if (s && typeof s === 'object'){
+      if (Array.isArray(s.completedLines)) state.completedLines = new Set(s.completedLines);
+      if (s.answers) state.answers = s.answers;
+      if (s.grid) state.grid = s.grid;
+      if (typeof s.rows === 'number') state.rows = s.rows;
+      if (typeof s.cols === 'number') state.cols = s.cols;
+      if (typeof s.lang === 'string') state.lang = s.lang;
     }
-  }catch(e){
-    state.praiseHistory = state.praiseHistory || JSON.parse(localStorage.getItem('wtaf-praiseHistory') || '{}');
-  }
+  }catch(e){}
 }
 
 /* helpers */
 function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-function safeEscape(str){ if (str===null||str===undefined) return ''; return String(str).replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+function safeEscape(str){ if (str===null||str===undefined) return ''; return String(str).replace(/[&<>\"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[s])); }
+function getPraises(){ const p=(I18N[state.lang]&&I18N[state.lang].praises)||I18N.en.praises; return p; }
+function getFacts(){ const f=(I18N[state.lang]&&I18N[state.lang].facts)||I18N.en.facts; return f; }
+function getUI(){ return (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui; }
 
-/* layout helpers */
 function layoutValueFromRowsCols(r,c){ if (r===4 && c===4) return '4x4'; if (r===3 && c===3) return '3x3'; if (r===4 && c===3) return '3x4'; return `${c}x${r}`; }
 function setLayoutByValue(val){
   if (val === '4x4'){ state.rows = 4; state.cols = 4; }
@@ -711,35 +616,29 @@ function setLayoutByValue(val){
     const parts = val.split('x').map(Number);
     if (parts.length===2){ state.cols = parts[0]; state.rows = parts[1]; }
   }
-  localStorage.setItem('wtaf-rows', String(state.rows));
-  localStorage.setItem('wtaf-cols', String(state.cols));
-  state.winThreshold = 1;
 }
 
-/* grid / tiles */
-function getFacts(){ return (I18N[state.lang] && I18N[state.lang].facts) ? I18N[state.lang].facts : I18N.en.facts; }
-function getPraises(){ return (I18N[state.lang] && I18N[state.lang].praises) ? I18N[state.lang].praises : I18N.en.praises; }
-function getSurprises(){ return (I18N[state.lang] && I18N[state.lang].surprises) ? I18N[state.lang].surprises : I18N.en.surprises; }
-
+/* grid + rendering */
 function randomiseGrid(){
   const needed = state.rows * state.cols;
-  const facts = getFacts();
-  const total = facts.length;
-  const indices = [...Array(total).keys()];
+  const factsEn = I18N.en.facts; // index base from English master
+  const indices = [...Array(factsEn.length).keys()];
   shuffleArray(indices);
   state.grid = indices.slice(0, needed);
   state.answers = {};
   state.completedLines = new Set();
-  state.bingoScale = 1;
+  state.roundPraiseUsed = []; // reset per round
   renderBoard(); updateProgress(); saveState();
 }
 function tileTextByIndex(idx){
-  const facts = getFacts();
-  return facts && typeof state.grid[idx] !== 'undefined' && facts[state.grid[idx]] ? String(facts[state.grid[idx]]) : '';
+  const factsLang = getFacts();
+  const fallback = I18N.en.facts;
+  const factIndex = state.grid[idx];
+  const fromLang = factsLang[factIndex];
+  return (typeof fromLang === 'string' && fromLang.length) ? fromLang : fallback[factIndex] || '';
 }
 function tileIconByIndex(idx){ const factIdx = state.grid[idx]; return ICONS[factIdx] || { fa:'fa-circle-question', emoji:'❓' }; }
 
-/* render board */
 function renderBoard(){
   const R = state.rows, C = state.cols;
   const totalTiles = R * C;
@@ -755,10 +654,8 @@ function renderBoard(){
     tile.type = 'button';
     tile.className = 'tile';
     tile.dataset.index = i;
-    const faHtml = `<i class="fa-solid ${icon.fa} fa-icon" aria-hidden="true" style="display:none"></i>`;
     const emojiHtml = `<span class="emoji-fallback" aria-hidden="true">${icon.emoji}</span>`;
     tile.innerHTML = `
-      ${faHtml}
       ${emojiHtml}
       <div class="fact">${safeEscape(fact)}</div>
       <div class="meta"><span class="who">${ entry ? safeEscape(entry.name) : '' }</span></div>
@@ -770,7 +667,7 @@ function renderBoard(){
   }
 }
 
-/* modal behavior */
+/* modal */
 let currentIdx = null;
 function onTileClick(idx, fact){
   if (!state.started) return;
@@ -784,22 +681,18 @@ function onTileClick(idx, fact){
   try { entryModal.showModal(); } catch(e){ entryModal.setAttribute('open',''); }
   setTimeout(()=> nameInput.focus(), 50);
 }
-
-function updateCharCount(){
-  const left = RESPONSE_CHAR_LIMIT - (respInput.value ? respInput.value.length : 0);
-  charCountEl.textContent = `${left} left`;
-}
+function updateCharCount(){ const left = RESPONSE_CHAR_LIMIT - (respInput.value ? respInput.value.length : 0); charCountEl.textContent = `${left} left`; }
 respInput.addEventListener('input', ()=> {
   if (respInput.value.length > RESPONSE_CHAR_LIMIT) respInput.value = respInput.value.slice(0, RESPONSE_CHAR_LIMIT);
   updateCharCount();
 });
 
-/* Save */
 function limitWords(str, maxWords){
   const words = str.trim().split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return { text: words.join(' '), truncated: false };
   return { text: words.slice(0, maxWords).join(' ') + '…', truncated: true };
 }
+
 saveBtn.addEventListener('click', (e)=>{
   e.preventDefault();
   const name = nameInput.value.trim();
@@ -810,191 +703,182 @@ saveBtn.addEventListener('click', (e)=>{
   state.answers[currentIdx] = { name: name, resp: finalResp };
   try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); }
   renderBoard();
-  checkForNewBingo();
+  const added = checkForNewBingo(); // returns number of new lines
+  if (added > 0){
+    showBingoWithPraise(name, added); // show once with (xN)
+  }
   updateProgress();
   saveState();
 });
 cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); } });
 
-/* bingo lines calculation */
+/* bingo calculation */
 function calculateBingoLines(){
   const R = state.rows, C = state.cols;
   const filled = new Set(Object.keys(state.answers).map(Number));
   const lines = [];
   // rows
-  for (let r=0;r<R;r++){
-    const row = [];
-    for (let c=0;c<C;c++) row.push(r*C + c);
-    lines.push(row);
-  }
+  for (let r=0;r<R;r++){ const row=[]; for (let c=0;c<C;c++) row.push(r*C + c); lines.push(row); }
   // cols
-  for (let c=0;c<C;c++){
-    const col = [];
-    for (let r=0;r<R;r++) col.push(r*C + c);
-    lines.push(col);
-  }
-  // diagonals (only if square)
+  for (let c=0;c<C;c++){ const col=[]; for (let r=0;r<R;r++) col.push(r*C + c); lines.push(col); }
+  // diagonals if square
   if (R === C){
-    const diag1 = []; for (let i=0;i<R;i++) diag1.push(i*C + i); lines.push(diag1);
-    const diag2 = []; for (let i=0;i<R;i++) diag2.push(i*C + (C-1-i)); lines.push(diag2);
+    const d1=[]; for (let i=0;i<R;i++) d1.push(i*C+i); lines.push(d1);
+    const d2=[]; for (let i=0;i<R;i++) d2.push(i*C+(C-1-i)); lines.push(d2);
   }
   const completed = new Set();
   lines.forEach((l,i)=>{ if (l.every(x=>filled.has(x))) completed.add(i); });
   return completed;
 }
 
-/* PRAISE & EFFECTS logic */
-let praiseTimer = null;
-function clearPraiseTimer(){ if (praiseTimer) { clearTimeout(praiseTimer); praiseTimer = null; } }
-
-function pickPraiseIndexForPerson(name){
-  const praises = getPraises();
-  if (!name) name = '__anon__';
-  state.praiseHistory = state.praiseHistory || {};
-  const usedArr = state.praiseHistory[name] || [];
-  const used = new Set(usedArr);
-  const all = praises.map((_,i)=>i);
-  const available = all.filter(i => !used.has(i));
-  if (available.length === 0){
-    // reset for this person
-    state.praiseHistory[name] = [];
-    saveState();
-    return pickPraiseIndexForPerson(name);
-  }
-  // slightly increase chance for praises with animation: we'll weight those indices higher
-  const weighted = [];
-  available.forEach(i=>{
-    const p = praises[i];
-    const weight = p.effect ? 3 : 1; // animation phrases are 3x more likely
-    for (let k=0;k<weight;k++) weighted.push(i);
-  });
-  const idx = weighted[Math.floor(Math.random() * weighted.length)];
-  // record used
-  state.praiseHistory[name] = state.praiseHistory[name] || [];
-  state.praiseHistory[name].push(idx);
-  saveState();
-  return idx;
+function checkForNewBingo(){
+  const now = calculateBingoLines();
+  const prev = state.completedLines || new Set();
+  const newLines = [...now].filter(i => !prev.has(i));
+  if (newLines.length > 0){ state.completedLines = now; }
+  return newLines.length;
 }
 
-function showPraiseForPerson(name){
-  if (!praiseEl) return;
-  clearPraiseTimer();
-  removeAllEffects();
+/* praise selection — no repeats within round; slight weight for animated */
+function pickPraiseIndexRound(){
+  const praises = getPraises();
+  const used = new Set(state.roundPraiseUsed || []);
+  const available = praises.map((_,i)=>i).filter(i=>!used.has(i));
+  if (available.length === 0){
+    // reset cycle
+    state.roundPraiseUsed = [];
+    saveState();
+    return pickPraiseIndexRound();
+  }
+  const weighted = [];
+  available.forEach(i=>{
+    const w = praises[i].effect ? 2 : 1; // slight bias for animated
+    for (let k=0;k<w;k++) weighted.push(i);
+  });
+  const choice = weighted[Math.floor(Math.random()*weighted.length)];
+  state.roundPraiseUsed.push(choice);
+  saveState();
+  return choice;
+}
+
+/* show bingo + praise + effect (stacked) */
+function showBingoWithPraise(personName, linesCount){
+  bingoOverlay.classList.add('show');
+  bingoOverlay.setAttribute('aria-hidden','false');
+
+  bingoText.textContent = linesCount>1 ? `BINGO! (x${linesCount})` : 'BINGO!';
 
   const praises = getPraises();
-  const idx = pickPraiseIndexForPerson(name);
-  const phraseObj = praises[idx];
-  const phrase = phraseObj && phrase.text ? phraseObj.text : (phrases[idx] || '');
+  const idx = pickPraiseIndexRound();
+  const phraseObj = praises[idx] || { text:'Nice!' };
+  const phrase = phraseObj.text || 'Nice!';
   praiseEl.textContent = phrase;
   praiseEl.classList.remove('hidden');
   setTimeout(()=> praiseEl.classList.add('visible'), 10);
 
-  // trigger special effect if mapping exists
-  if (phraseObj && phraseObj.effect){ triggerEffectByKey(phraseObj.effect); }
-
-  // auto-dismiss after configured time unless the user clicks it first
-  praiseTimer = setTimeout(()=> {
-    hidePraise();
-  }, PRAISE_AUTO_DISMISS_MS);
-}
-
-function hidePraise(){
-  if (!praiseEl) return;
-  clearPraiseTimer();
-  praiseEl.classList.remove('visible');
-  setTimeout(()=> praiseEl.classList.add('hidden'), 220);
-  setTimeout(()=> removeAllEffects(), 600);
-}
-
-/* clicking the praise hides it immediately */
-praiseEl.addEventListener('click', (e) => {
-  e.stopPropagation();
-  hidePraise();
-});
-
-/* effect functions */
-function triggerEffectByKey(key){
-  const map = EFFECT_MAP.find(m=>m.key === key || m.key === (key+'') );
-  if (map) try{ map.fn(); } catch(e){ console.warn('effect failed', e); }
-}
-function removeAllEffects(){
+  // prepare effect area
   effectsEl.innerHTML = '';
-  if (pageTitle.dataset._tempTitle) {
-    pageTitle.textContent = pageTitle.dataset._tempTitle;
-    delete pageTitle.dataset._tempTitle;
+  if (phraseObj.effect){
+    const node = buildEffectNode(phraseObj.effect);
+    if (node) effectsEl.appendChild(node);
   }
-  document.querySelectorAll('.cinematic').forEach(n=>n.remove());
-  document.querySelectorAll('.clapper').forEach(n=>n.remove());
-}
-function triggerParade(){ const c = document.createElement('div'); c.className = 'parade'; const emojis = ['🎺','🎉','🥁','🪅','🕺']; emojis.forEach(e=>{ const s=document.createElement('span'); s.textContent=e; c.appendChild(s); }); effectsEl.appendChild(c); setTimeout(()=> c.remove(), 5200); }
-function triggerTrendingBadge(){ const el = document.createElement('div'); el.className = 'leaderboard'; el.innerHTML = `<h4>✨ #1 Trending</h4><div style="font-size:13px; opacity:.9;">People are talking about your bingo.</div>`; effectsEl.appendChild(el); setTimeout(()=> el.remove(), 5200); }
-function triggerBarrel(){ const b = document.createElement('div'); b.className = 'barrel'; b.textContent = '🛢️'; effectsEl.appendChild(b); setTimeout(()=> b.remove(), 5200); }
-function triggerPokeball(){ const p = document.createElement('div'); p.className = 'pokeball'; effectsEl.appendChild(p); setTimeout(()=> p.remove(), 5200); }
-function triggerThumbUp(){ const t = document.createElement('div'); t.className = 'thumbup'; t.textContent = '👍'; effectsEl.appendChild(t); setTimeout(()=> t.remove(), 5200); }
-function triggerChefKiss(){ const c = document.createElement('div'); c.className = 'chefkiss'; c.textContent = '👨‍🍳💋'; effectsEl.appendChild(c); setTimeout(()=> c.remove(), 5200); }
-function triggerDivineLight(){ const d = document.createElement('div'); d.className = 'divine'; const eyes = document.createElement('div'); eyes.className = 'glow-eyes'; eyes.textContent = '👀'; effectsEl.appendChild(d); effectsEl.appendChild(eyes); setTimeout(()=> { d.remove(); eyes.remove(); }, 5200); }
-function triggerLeaderboard(){ const el = document.createElement('div'); el.className = 'leaderboard'; el.innerHTML = `<h4>🏆 Bingo Hall of Fame</h4><ul style="margin:0;padding:0;"><li class="you">You — 1,234 pts</li><li>Alex — 1,220 pts</li><li>Jordan — 1,119 pts</li><li>Casey — 1,030 pts</li></ul>`; effectsEl.appendChild(el); setTimeout(()=> el.remove(), 5200); }
-function triggerSwordSlash(){ const s = document.createElement('div'); s.className='slash'; const line = document.createElement('div'); line.className='line'; s.appendChild(line); effectsEl.appendChild(s); setTimeout(()=> s.remove(), 5200); }
-function triggerRenameTitle(){ if (!pageTitle.dataset._tempTitle) pageTitle.dataset._tempTitle = pageTitle.textContent; pageTitle.textContent = "Who the Fact are YOU?!"; setTimeout(()=> { if (pageTitle.dataset._tempTitle) { pageTitle.textContent = pageTitle.dataset._tempTitle; delete pageTitle.dataset._tempTitle; } }, 5200); }
-function triggerCinematic(){ const top = document.createElement('div'); top.className='cinematic'; const bottom = document.createElement('div'); bottom.className='cinematic bottom'; const clap = document.createElement('div'); clap.className='clapper'; clap.textContent='🎬'; document.body.appendChild(top); document.body.appendChild(bottom); document.body.appendChild(clap); setTimeout(()=> { top.remove(); bottom.remove(); clap.remove(); }, 5200); }
 
-/* Progress / bingo */
+  // confetti (short)
+  const duration = 900; const end = Date.now() + duration;
+  (function frame(){
+    confetti({ particleCount: 10, spread: 60, startVelocity: 40, origin: { x: Math.random(), y: Math.random()*0.35 }});
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+
+  state.justShownAt = Date.now();
+}
+
+/* build effect DOM (centered under praise) */
+function buildEffectNode(key){
+  switch(key){
+    case 'parade': {
+      const c = document.createElement('div'); c.className='parade';
+      ['🎺','🎉','🥁','🪅','🕺'].forEach(e=>{ const s=document.createElement('span'); s.textContent=e; c.appendChild(s); });
+      return c;
+    }
+    case 'trending': {
+      const el = document.createElement('div'); el.className='leaderboard';
+      el.innerHTML = `<h4>✨ #1 Trending</h4><div style="font-size:13px; opacity:.9;">People are talking about your bingo.</div>`;
+      return el;
+    }
+    case 'barrel': { const b=document.createElement('div'); b.className='barrel'; b.textContent='🛢️'; return b; }
+    case 'pokeball': { const p=document.createElement('div'); p.className='pokeball'; p.textContent='⚪️'; return p; }
+    case 'thumb': { const t=document.createElement('div'); t.className='thumbup'; t.textContent='👍'; return t; }
+    case 'chef': { const c=document.createElement('div'); c.className='chefkiss'; c.textContent='👨‍🍳💋'; return c; }
+    case 'divine': {
+      const wrap=document.createElement('div'); wrap.className='divine';
+      const eyes=document.createElement('div'); eyes.className='glow-eyes'; eyes.textContent='👀';
+      wrap.appendChild(eyes); return wrap;
+    }
+    case 'leader': {
+      const el=document.createElement('div'); el.className='leaderboard';
+      el.innerHTML=`<h4>🏆 Bingo Hall of Fame</h4><ul style="margin:0;padding-left:18px;"><li><strong>You</strong> — 1,234 pts</li><li>Alex — 1,220 pts</li><li>Jordan — 1,119 pts</li></ul>`;
+      return el;
+    }
+    case 'slash': {
+      const s=document.createElement('div'); s.className='slash';
+      const line=document.createElement('div'); line.className='line'; s.appendChild(line);
+      return s;
+    }
+    case 'rename': {
+      const box=document.createElement('div');
+      box.style.display='flex'; box.style.flexDirection='row'; box.style.gap='10px'; box.style.alignItems='center';
+      const clap=document.createElement('div'); clap.className='clapper'; clap.textContent='🎬';
+      const title=document.getElementById('pageTitle');
+      if (!title.dataset._orig){ title.dataset._orig = title.textContent; }
+      title.textContent = 'Who the Fact are YOU?!';
+      box.appendChild(clap);
+      return box;
+    }
+    case 'cinematic': {
+      const stack=document.createElement('div');
+      stack.style.display='flex'; stack.style.flexDirection='column'; stack.style.alignItems='center'; stack.style.gap='8px';
+      const top=document.createElement('div'); top.className='cinematic-bar';
+      const bottom=document.createElement('div'); bottom.className='cinematic-bar';
+      const clap=document.createElement('div'); clap.className='clapper'; clap.textContent='🎬';
+      stack.appendChild(top); stack.appendChild(clap); stack.appendChild(bottom);
+      return stack;
+    }
+    default: return null;
+  }
+}
+
+/* dismiss visuals on any screen click (but ignore the same click that caused it) */
+function onScreenClick(e){
+  if (e.target.closest('.modal')) return;
+  const elapsed = Date.now() - (state.justShownAt || 0);
+  if (elapsed < 200) return; // guard so it doesn't instantly close on the same click
+  if (bingoOverlay.classList.contains('show')){
+    // hide everything
+    bingoOverlay.classList.remove('show');
+    bingoOverlay.setAttribute('aria-hidden','true');
+    praiseEl.classList.remove('visible');
+    setTimeout(()=> praiseEl.classList.add('hidden'), 180);
+    effectsEl.innerHTML = '';
+    // restore title if renamed
+    const title=document.getElementById('pageTitle');
+    if (title && title.dataset._orig){ title.textContent = title.dataset._orig; delete title.dataset._orig; }
+  }
+}
+document.addEventListener('click', onScreenClick);
+bingoOverlay.addEventListener('click', (e)=>{ e.stopPropagation(); onScreenClick(e); });
+document.getElementById('praise').addEventListener('click', (e)=>{ e.stopPropagation(); onScreenClick(e); });
+
+/* progress text */
 function updateProgress(){
   const filled = Object.keys(state.answers).length;
   const total = state.rows * state.cols;
   const lines = calculateBingoLines();
-  const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
+  const ui = getUI();
   progressEl.textContent = `${ui.filled(filled, total)} · ${ui.lines(lines.size)}`;
 }
-function playClapSound(){
-  if (clapAudio && typeof clapAudio.play === 'function'){
-    try { clapAudio.volume = 0.28; clapAudio.currentTime = 0; clapAudio.play().catch(()=>{}); } catch(e){}
-    return;
-  }
-}
 
-/* show a bingo for a particular person (doesn't resize bingo) */
-function showBingoForPerson(personName){
-  bingoOverlay.classList.add('show');
-  bingoText.style.transform = `scale(1)`; // fixed size now
-  bingoText.textContent = 'BINGO!';
-  // show praise popup for that person
-  showPraiseForPerson(personName);
-  // confetti
-  const duration = 1200; const end = Date.now() + duration;
-  (function frame(){
-    confetti({ particleCount: 8, spread: 60, startVelocity: 40, origin: { x: Math.random(), y: Math.random()*0.35 }});
-    if (Date.now() < end) requestAnimationFrame(frame);
-  })();
-}
-bingoOverlay.addEventListener('click', ()=> bingoOverlay.classList.remove('show'));
-
-/* NEW: Check for new bingo (fires for every newly completed line)
-   - If multiple lines were completed in one action, trigger celebrations sequentially (2s apart).
-*/
-function checkForNewBingo(){
-  const now = calculateBingoLines();
-  const prev = (state.completedLines instanceof Set) ? state.completedLines : new Set();
-  const newLines = [...now].filter(i => !prev.has(i));
-  if (newLines.length > 0) {
-    state.completedLines = now;
-    // Determine person name to attribute praises to (use the tile that was just filled)
-    const personName = (currentIdx !== null && state.answers[currentIdx] && state.answers[currentIdx].name) ? state.answers[currentIdx].name : '__anon__';
-
-    newLines.forEach((lineIdx, idx) => {
-      // schedule each bingo sequentially (first one at 0ms, next at BASE_BINGO_INTERVAL_MS, etc.)
-      const scheduleBingoAt = idx * BASE_BINGO_INTERVAL_MS;
-      setTimeout(()=> {
-        showBingoForPerson(personName);
-        saveState();
-      }, scheduleBingoAt);
-    });
-  }
-  updateProgress();
-  saveState();
-}
-
-/* Controls wiring */
+/* controls */
 randomBtn.addEventListener('click', ()=>{
   if (state.started) return;
   if (state.randomLeft <= 0) return;
@@ -1007,21 +891,23 @@ startBtn.addEventListener('click', ()=>{
     state.started = true; saveState();
     preHint.style.display = 'none';
     startBtn.classList.remove('primary');
-    startBtn.querySelector('[data-i18n]')?.setAttribute('data-i18n','reset');
-    startBtn.innerHTML = `↺ Reset`;
+    startBtn.innerHTML = `↺ ${getUI().reset || 'Reset'}`;
     randomBtn.disabled = true;
+    state.roundPraiseUsed = []; // new round
   } else {
-    state.started = false; state.answers = {}; state.completedLines = new Set(); state.bingoScale = 1;
+    // reset the round
+    state.started = false; state.answers = {}; state.completedLines = new Set();
     state.randomLeft = 3; rndLeftEl.textContent = '3';
-    startBtn.classList.add('primary'); startBtn.innerHTML = `▶ Start Bingo`;
+    startBtn.classList.add('primary'); startBtn.innerHTML = `▶ ${getUI().start || 'Start Bingo'}`;
     randomBtn.disabled = false;
+    state.roundPraiseUsed = [];
     renderBoard(); updateProgress(); saveState();
   }
 });
 
 /* dark toggle */
 function updateDarkToggleLabel(){
-  const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
+  const ui = getUI();
   if (document.body.classList.contains('dark')) darkToggle.textContent = ui.lightMode || '☀ Light mode';
   else darkToggle.textContent = ui.darkMode || '🌙 Dark mode';
 }
@@ -1032,25 +918,24 @@ darkToggle.addEventListener('click', ()=>{
   updateDarkToggleLabel();
 });
 
-/* language selector change — fixes the broken translation toggle */
+/* language — IMPORTANT: do NOT reshuffle or clear answers; just re-render with translated text */
 langSel.addEventListener('change', ()=>{
   state.lang = langSel.value;
   localStorage.setItem('wtaf-lang', state.lang);
-  // reset answers and regenerate grid in the new language
-  state.answers = {};
-  state.completedLines = new Set();
-  state.randomLeft = 3; rndLeftEl.textContent = String(state.randomLeft);
-  randomiseGrid();
-  applyLang();
+  applyLang();        // updates UI strings
+  renderBoard();      // re-render tiles with same indices, translated text
+  updateProgress();
+  saveState();
 });
 
-/* layout selector */
+/* layout selector (this resets round) */
 layoutSel.addEventListener('change', ()=>{
   setLayoutByValue(layoutSel.value);
   state.started = false;
   state.answers = {};
   state.completedLines = new Set();
   state.randomLeft = 3; rndLeftEl.textContent = String(state.randomLeft);
+  state.roundPraiseUsed = [];
   randomiseGrid();
   applyLang();
   updateProgress();
@@ -1065,20 +950,18 @@ document.getElementById('fontDec').addEventListener('click', ()=>{ const cur = p
 
 /* boot */
 loadState();
-state.lang = state.lang || 'en';
 document.body.classList.toggle('dark', localStorage.getItem('wtaf-dark') === '1');
 rndLeftEl.textContent = state.randomLeft;
 setFontSize(getSavedFontSize());
 applyLang();
 if (!Array.isArray(state.grid) || state.grid.length !== state.rows * state.cols) {
-  state.winThreshold = 1; randomiseGrid();
+  randomiseGrid();
 }
-if (state.started){ startBtn.classList.remove('primary'); startBtn.innerHTML = `↺ Reset`; randomBtn.disabled = true; }
+if (state.started){ startBtn.classList.remove('primary'); startBtn.innerHTML = `↺ ${getUI().reset || 'Reset'}`; randomBtn.disabled = true; }
 
-/* applyLang */
+/* apply language UI strings (no randomise/clear here) */
 function applyLang(){
-  const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
-  // UI strings
+  const ui = getUI();
   document.querySelector('[data-i18n="randomize"]').textContent = ui.randomize || 'Randomise board';
   const startSpan = startBtn.querySelector('[data-i18n]');
   if (startSpan) startSpan.textContent = ui.start || 'Start Bingo';
@@ -1092,20 +975,11 @@ function applyLang(){
   cancelBtn.textContent = ui.cancel || 'Cancel';
   saveBtn.textContent = ui.save || 'Save';
   updateDarkToggleLabel();
-  // layout select keep same
   layoutSel.value = layoutValueFromRowsCols(state.rows, state.cols);
-  // update board content
-  renderBoard();
-  updateProgress();
-  saveState();
 }
 
-/* detect FontAwesome (optional) */
-function detectFontAwesome(){ try{ if (document.fonts && document.fonts.check("1em 'Font Awesome 6 Free'")) document.body.classList.add('fa-loaded'); else document.body.classList.remove('fa-loaded'); } catch(e){ document.body.classList.remove('fa-loaded'); } }
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(detectFontAwesome); else setTimeout(detectFontAwesome, 400);
-
-/* self-test */
-(function runSelfTests(){ console.groupCollapsed('WTFAY self-tests'); const tmp = { completedLines: new Set([1,2,7]) }; const s = JSON.stringify(toSavableState(tmp)); const r = fromSavedState(JSON.parse(s)); console.assert(r.completedLines instanceof Set, 'revived set'); console.assert(r.completedLines.has(7), 'contains 7'); console.groupEnd(); })();
+/* small self-test */
+(function runSelfTests(){ try{ const tmp = { completedLines: new Set([1,2,7]) }; const s = JSON.stringify({completedLines:Array.from(tmp.completedLines)}); const r = JSON.parse(s); console.assert(Array.isArray(r.completedLines),'selftest'); }catch(e){} })();
 
 </script>
 </body>
