@@ -130,14 +130,8 @@
           <select id="layoutSel" class="btn" aria-label="Board layout">
             <option value="4x4">4×4</option>
             <option value="3x3">3×3</option>
-            <option value="3x4">3×4 (3 cols × 4 rows)</option>
+            <option value="3x4">3×4</option>
           </select>
-        </label>
-
-        <!-- HARD MODE toggle (for 3x3) -->
-        <label style="display:inline-flex; align-items:center; gap:0.35rem;">
-          <input id="hardToggle" type="checkbox" style="transform:scale(1.05); margin-right:6px;" />
-          <span class="hint" style="font-size:0.875rem;">Hard mode (3×3 needs 2 lines)</span>
         </label>
 
         <button id="randomBtn" class="btn">🔀 <span data-i18n="randomize">Randomise board</span> (<span id="rndLeft">3</span>)</button>
@@ -192,9 +186,9 @@
 
 <script>
 /* Config */
-const RESPONSE_CHAR_LIMIT = 60; // change this to adjust per-response character cap
+const RESPONSE_CHAR_LIMIT = 60; // per-response character cap
 
-/* i18n */
+/* i18n — only English expanded here for brevity; include other languages if desired */
 const I18N = {
   en: {
     ui: {
@@ -246,12 +240,10 @@ const I18N = {
       '…has a favourite board game or card game',
       '…has a food they refuse to eat under any circumstance'
     ]
-  },
-  ja: { /* omitted for brevity in this response — original file includes same as earlier */ },
-  id: { /* omitted for brevity in this response — original file includes same as earlier */ }
+  }
 };
 
-/* Minimal ICONS list (keeps mapping simple) */
+/* Icons */
 const ICONS = [
   { fa:'fa-briefcase', emoji:'🏢' }, { fa:'fa-masks-theater', emoji:'🎤' }, { fa:'fa-earth-americas', emoji:'🌍' },
   { fa:'fa-language', emoji:'🗣️' }, { fa:'fa-star', emoji:'⭐' }, { fa:'fa-person-running', emoji:'🏃' },
@@ -290,7 +282,6 @@ const bingoOverlay = document.getElementById('bingoOverlay');
 const bingoText = document.getElementById('bingoText');
 const clapAudio = document.getElementById('clapAudio');
 const layoutSel = document.getElementById('layoutSel');
-const hardToggleCheckbox = document.getElementById('hardToggle');
 const charLimitEl = document.getElementById('charLimit');
 const charCountEl = document.getElementById('charCount');
 const pageTitle = document.getElementById('pageTitle');
@@ -306,7 +297,7 @@ let state = {
   randomLeft: 3,
   completedLines: new Set(),
   bingoScale: 1,
-  winThreshold: Number(localStorage.getItem('wtaf-winThreshold') || 1)
+  winThreshold: 1 // single-line win for all layouts
 };
 
 /* Persistence helpers */
@@ -336,7 +327,6 @@ function loadState(){
     const revived = fromSavedState(s);
     if (revived) {
       state = {...state, ...revived};
-      // ensure numeric rows/cols exist (fallback for older single-size state)
       if (!state.rows || !state.cols) {
         const size = Number(localStorage.getItem('wtaf-size') || 4);
         state.rows = size; state.cols = size;
@@ -356,12 +346,13 @@ function setLayoutByValue(val){
   else if (val === '3x3'){ state.rows = 3; state.cols = 3; }
   else if (val === '3x4'){ state.rows = 4; state.cols = 3; } // 3 cols, 4 rows -> rows=4, cols=3
   else {
-    // fallback parse "CxR" or "RxC"
     const parts = val.split('x').map(Number);
     if (parts.length===2){ state.cols = parts[0]; state.rows = parts[1]; }
   }
   localStorage.setItem('wtaf-rows', String(state.rows));
   localStorage.setItem('wtaf-cols', String(state.cols));
+  // always single-line win
+  state.winThreshold = 1;
 }
 
 /* Grid / Tiles */
@@ -435,7 +426,6 @@ function updateCharCount(){
   charCountEl.textContent = `${left} left`;
 }
 respInput.addEventListener('input', ()=> {
-  // maxlength prevents further characters already, but also ensure trim
   if (respInput.value.length > RESPONSE_CHAR_LIMIT) respInput.value = respInput.value.slice(0, RESPONSE_CHAR_LIMIT);
   updateCharCount();
 });
@@ -451,9 +441,7 @@ saveBtn.addEventListener('click', (e)=>{
   const name = nameInput.value.trim();
   const resp = respInput.value.trim();
   if (!name || !resp) return;
-  // still limit words for readability (optional)
   const limited = limitWords(resp, 40);
-  // store but ensure character cap enforced
   const finalResp = limited.text.slice(0, RESPONSE_CHAR_LIMIT);
   state.answers[currentIdx] = { name: name, resp: finalResp };
   try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); }
@@ -464,9 +452,7 @@ saveBtn.addEventListener('click', (e)=>{
 });
 cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); try { entryModal.close(); } catch(e){ entryModal.removeAttribute('open'); } });
 
-/* Bingo lines calculation (generic for rows x cols)
-   For rectangular boards diagonals are only considered when rows === cols
-*/
+/* Bingo lines calculation */
 function calculateBingoLines(){
   const R = state.rows, C = state.cols;
   const filled = new Set(Object.keys(state.answers).map(Number));
@@ -501,13 +487,7 @@ function updateProgress(){
   const ui = (I18N[state.lang] && I18N[state.lang].ui) ? I18N[state.lang].ui : I18N.en.ui;
 
   let base = `${ui.filled(filled, total)} · ${ui.lines(lines.size)}`;
-  // indicate layout and threshold/hard mode hints
-  const layoutLabel = layoutValueFromRowsCols(state.rows, state.cols);
-  if (state.rows === 3 && state.cols === 3 && hardToggleCheckbox.checked) {
-    base += ' · Hard: 2 non-overlapping lines (6 different people)';
-  } else if (state.winThreshold > 1) {
-    base += ` · Need ${state.winThreshold} lines`;
-  }
+  if (state.winThreshold > 1) base += ` · Need ${state.winThreshold} lines`;
   progressEl.textContent = base;
 }
 function playClapSound(){
@@ -515,7 +495,6 @@ function playClapSound(){
     try { clapAudio.volume = 0.28; clapAudio.currentTime = 0; clapAudio.play().catch(()=>{}); } catch(e){}
     return;
   }
-  // simple fallback omitted
 }
 function showBingo(){
   bingoOverlay.classList.add('show');
@@ -529,63 +508,15 @@ function showBingo(){
 }
 bingoOverlay.addEventListener('click', ()=> bingoOverlay.classList.remove('show'));
 
-/* Strict 3x3 hard-mode check: disjoint lines & unique names */
-function hasQualifyingDisjointPair(completedSet) {
-  if (!completedSet || completedSet.size < 2) return false;
-  const completed = Array.from(completedSet);
-  // Build lines same as calculateBingoLines
-  const R = state.rows, C = state.cols;
-  const lines = [];
-  for (let r=0;r<R;r++){ const row=[]; for (let c=0;c<C;c++) row.push(r*C + c); lines.push(row); }
-  for (let c=0;c<C;c++){ const col=[]; for (let r=0;r<R;r++) col.push(r*C + c); lines.push(col); }
-  if (R === C){ const d1=[]; for (let i=0;i<R;i++) d1.push(i*C + i); lines.push(d1); const d2=[]; for (let i=0;i<R;i++) d2.push(i*C + (C-1-i)); lines.push(d2); }
-
-  const completedLineTiles = completed.map(idx => lines[idx]);
-  for (let a=0;a<completedLineTiles.length;a++){
-    for (let b=a+1;b<completedLineTiles.length;b++){
-      const lineA = completedLineTiles[a], lineB = completedLineTiles[b];
-      const shared = lineA.some(x => lineB.includes(x));
-      if (shared) continue;
-      const names = [];
-      for (const tileIdx of [...lineA, ...lineB]) {
-        const entry = state.answers[tileIdx];
-        if (!entry || !entry.name) { names.push(null); } else names.push(String(entry.name).trim());
-      }
-      if (names.some(n => !n)) continue;
-      const uniqueNames = new Set(names.map(n => n.toLowerCase()));
-      if (uniqueNames.size === names.length) return true;
-    }
-  }
-  return false;
-}
-
-/* Check for new bingo (uses threshold & hard-mode)
-   - For non-square rectangular boards diagonals are ignored (see calculateBingoLines).
-*/
+/* Check for new bingo (single-line threshold) */
 function checkForNewBingo(){
   const now = calculateBingoLines();
   const prev = (state.completedLines instanceof Set) ? state.completedLines : new Set();
   const newLines = [...now].filter(i=>!prev.has(i));
   if (newLines.length){
     state.completedLines = now;
-    let isWin = false;
-    if (state.winThreshold <= 1) {
-      if (now.size >= 1 && prev.size < 1) isWin = true;
-    } else {
-      const hardActive = (state.rows === 3 && state.cols === 3 && hardToggleCheckbox.checked);
-      if (hardActive) {
-        if (hasQualifyingDisjointPair(now)) {
-          const prevQual = hasQualifyingDisjointPair(prev);
-          if (!prevQual) isWin = true;
-        }
-      } else {
-        if (now.size >= state.winThreshold && prev.size < state.winThreshold) isWin = true;
-      }
-    }
-    if (isWin) {
-      state.bingoScale *= 1.5;
-      playClapSound();
-      showBingo();
+    if (now.size >= state.winThreshold && prev.size < state.winThreshold) {
+      state.bingoScale *= 1.5; playClapSound(); showBingo();
     }
   }
   updateProgress();
@@ -636,27 +567,12 @@ langSel.addEventListener('change', ()=>{ state.lang = langSel.value; applyLang()
 /* Layout selector */
 layoutSel.addEventListener('change', ()=>{
   setLayoutByValue(layoutSel.value);
-  // default threshold behaviors
-  if (state.rows === 3 && state.cols === 3) {
-    state.winThreshold = hardToggleCheckbox.checked ? 2 : 2; // default 2 for 3x3
-  } else {
-    state.winThreshold = 1;
-  }
   state.started = false;
   state.answers = {};
   state.completedLines = new Set();
   state.randomLeft = 3; rndLeftEl.textContent = String(state.randomLeft);
   randomiseGrid();
   applyLang();
-  updateProgress();
-});
-
-/* Hard-mode checkbox */
-hardToggleCheckbox.addEventListener('change', ()=>{
-  if (state.rows === 3 && state.cols === 3) {
-    state.winThreshold = hardToggleCheckbox.checked ? 2 : 2; // threshold remains 2; hard mode affects validation
-  }
-  saveState();
   updateProgress();
 });
 
@@ -673,7 +589,10 @@ document.body.classList.toggle('dark', localStorage.getItem('wtaf-dark') === '1'
 rndLeftEl.textContent = state.randomLeft;
 setFontSize(getSavedFontSize());
 applyLang();
-if (!Array.isArray(state.grid) || state.grid.length !== state.rows * state.cols) randomiseGrid();
+if (!Array.isArray(state.grid) || state.grid.length !== state.rows * state.cols) {
+  state.winThreshold = 1; // ensure single-line win on load
+  randomiseGrid();
+}
 if (state.started){ startBtn.classList.remove('primary'); startBtn.innerHTML = `↺ ${I18N[state.lang].ui.reset}`; randomBtn.disabled = true; }
 
 /* Apply language and UI */
@@ -688,14 +607,12 @@ function applyLang(){
   updateDarkToggleLabel();
   document.title = `Who the Fact Are You? — ${layoutValueFromRowsCols(state.rows, state.cols)} Bingo`;
   if (pageTitle) pageTitle.textContent = `Who the Fact Are You? (${layoutValueFromRowsCols(state.rows, state.cols)}) 🎉`;
-  // hardToggle visibility
-  hardToggleCheckbox.style.display = (state.rows === 3 && state.cols === 3) ? 'inline-flex' : 'none';
   renderBoard();
   updateProgress();
   saveState();
 }
 
-/* detect FontAwesome (not required; emoji fallback used) */
+/* detect FontAwesome (emoji fallback OK) */
 function detectFontAwesome(){ try{ if (document.fonts && document.fonts.check("1em 'Font Awesome 6 Free'")) document.body.classList.add('fa-loaded'); else document.body.classList.remove('fa-loaded'); } catch(e){ document.body.classList.remove('fa-loaded'); } }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(detectFontAwesome); else setTimeout(detectFontAwesome, 400);
 
